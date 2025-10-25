@@ -72,23 +72,23 @@
       "verified_purchase": false,
       "profile_photo_url": null,
       "language": "en",
-      "fetched_timestamp": "2025-10-25T17:15:33.726000+00:00",
+      "fetched_timestamp": "2025-10-25T19:23:14.988000+00:00",
       "sentiment_score": null,
       "photos_attached": 0,
       "owner_response_date": null,
-      "llm_processed": true,
-      "llm_processed_date": "2025-10-25T10:16:15.375445",
-      "overall_sentiment": "negative",
-      "rating_food": 1,
-      "rating_service": 1,
+      "llm_processed": false,
+      "llm_processed_date": null,
+      "overall_sentiment": null,
+      "rating_food": null,
+      "rating_service": null,
       "rating_ambiance": null,
       "rating_value": null,
-      "mentioned_items": "[{\"name\": \"layered potatoes\", \"sentiment\": \"negative\", \"aspects\": [\"taste\", \"presentation\", \"temperature\"]}, {\"name\": \"pesto mayo\", \"sentiment\": \"negative\", \"aspects\": [\"taste\"]}]",
+      "mentioned_items": null,
       "staff_mentions": null,
-      "operational_insights": "{\"wait_time\": \"not_mentioned\", \"reservation_experience\": \"not_mentioned\", \"cleanliness\": \"not_mentioned\", \"noise_level\": \"not_mentioned\", \"crowding\": \"not_mentioned\"}",
-      "visit_context": "{\"party_type\": \"unknown\", \"occasion\": \"regular\", \"time_of_visit\": \"unknown\", \"first_visit\": true, \"would_return\": false, \"would_recommend\": false}",
-      "key_phrases": "{\"positive_highlights\": [], \"negative_issues\": [\"no one answers the phone for questions about food\", \"it's an oil based condiment for a fried dish\", \"potatoes were brown on the inside like they had been cut, prepped, and left out too long and oxidized\"], \"suggestions\": [\"answer phone calls for customer service\", \"better condiment pairing for fried dishes\", \"improve food prep procedures to prevent oxidation\"]}",
-      "anomaly_flags": "{\"potential_fake\": false, \"health_safety_concern\": true, \"extreme_emotion\": false, \"competitor_mention\": false}"
+      "operational_insights": null,
+      "visit_context": null,
+      "key_phrases": null,
+      "anomaly_flags": null
     }
   ],
   "snapshots": [
@@ -169,6 +169,16 @@
     },
     {
       "snapshot_id": "sd_mh6jhfg02d7bwk9wkc",
+      "source": "yelp",
+      "status": "ready"
+    },
+    {
+      "snapshot_id": "sd_mh6o3cvj2np9pmggdz",
+      "source": "google",
+      "status": "running"
+    },
+    {
+      "snapshot_id": "sd_mh6o3dqo2ngn6iky76",
       "source": "yelp",
       "status": "ready"
     }

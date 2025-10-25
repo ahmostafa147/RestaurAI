@@ -1,22 +1,30 @@
 """
-Restaurant Review API Service
-FastAPI service that exposes REST endpoints for review processing and analytics.
+Restaurant Review Agent for AgentVerse
+uAgent that responds to chat messages with analytics reports and refreshes reviews daily.
 """
 
 import sys
 import os
 import asyncio
 import logging
+import json
 from typing import Optional, Dict, Any
 from datetime import datetime
+from uuid import uuid4
 
 # Add src directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from fastapi import FastAPI, BackgroundTasks, Header, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
+from uagents import Agent, Context, Protocol
+from uagents_core.contrib.protocols.chat import (
+    ChatAcknowledgement,
+    ChatMessage,
+    TextContent,
+    AgentContent,
+    StartSessionContent,
+    EndSessionContent,
+    chat_protocol_spec
+)
 
 from main import RestaurantReviewAgent
 from scrapers.pull_dataset import Status
@@ -25,177 +33,149 @@ from scrapers.pull_dataset import Status
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Restaurant Review API",
-    description="API for restaurant review processing and analytics",
-    version="1.0.0"
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Configuration
-API_KEY = os.getenv("API_KEY", "default-api-key")
+REFRESH_INTERVAL_SECONDS = 86400  # 24 hours as constant variable
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'database.json')
 
 # Initialize the restaurant review agent
 restaurant_agent = RestaurantReviewAgent(DATABASE_PATH)
 
-# Pydantic models for API responses
-class APIResponse(BaseModel):
-    success: bool
-    message: str
-    data: Optional[Dict[str, Any]] = None
+# Initialize the uAgent
+agent = Agent(
+    name="restaurant-review-agent",
+    seed="restaurant_review_agent_seed_2025",
+    port=8003,
+    mailbox=True
+)
 
-class StatusResponse(BaseModel):
-    total_reviews: int
-    processed_reviews: int
-    snapshots_count: int
-    snapshots_status: list
-    last_updated: Optional[str] = None
+# Initialize chat protocol
+protocol = Protocol(spec=chat_protocol_spec)
 
-class AnalyticsResponse(BaseModel):
-    report: Dict[str, Any]
-    generated_at: str
-
-# Authentication dependency
-def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return x_api_key
-
-# Background task for review processing
-async def process_reviews_background():
-    """Background task to process reviews"""
+# Chat message handler
+@protocol.on_message(ChatMessage)
+async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
+    """Handle incoming chat messages and respond with analytics report"""
     try:
-        logger.info("Starting background review processing...")
+        # Step 1: Send acknowledgement
+        await ctx.send(
+            sender,
+            ChatAcknowledgement(
+                timestamp=datetime.now(),
+                acknowledged_msg_id=msg.msg_id
+            ),
+        )
+        
+        # Step 2: Check if user message
+        is_user_message = isinstance(msg.content[-1], TextContent)
+        ctx.logger.info(f"Received message from {sender}: {msg}")
+        
+        if is_user_message:
+            ctx.logger.info("Processing user message...")
+            
+            # Step 3: Load analytics report
+            try:
+                with open('analytics_report.json', 'r') as f:
+                    report = json.load(f)
+                
+                response = json.dumps(report, indent=2)
+                ctx.logger.info("Analytics report loaded successfully")
+                
+            except FileNotFoundError:
+                response = "Analytics report not found. Please wait for the daily refresh to complete."
+                ctx.logger.warning("Analytics report file not found")
+            except Exception as e:
+                response = f"Error loading analytics report: {str(e)}"
+                ctx.logger.error(f"Error loading analytics report: {e}")
+            
+            # Step 4: Send response
+            await ctx.send(sender, ChatMessage(
+                timestamp=datetime.now(),
+                msg_id=uuid4(),
+                content=[
+                    TextContent(type="text", text=response),
+                    EndSessionContent(type="end_session", reason="success")
+                ]
+            ))
+            
+            ctx.logger.info("Response sent successfully")
+        
+    except Exception as e:
+        ctx.logger.error(f"Error handling message: {e}")
+        # Send error response
+        try:
+            await ctx.send(sender, ChatMessage(
+                timestamp=datetime.now(),
+                msg_id=uuid4(),
+                content=[
+                    TextContent(type="text", text=f"Error processing request: {str(e)}"),
+                    EndSessionContent(type="end_session", reason="error")
+                ]
+            ))
+        except Exception as send_error:
+            ctx.logger.error(f"Error sending error response: {send_error}")
+
+@protocol.on_message(ChatAcknowledgement)
+async def handle_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
+    """Handle acknowledgements"""
+    ctx.logger.info(f"Received acknowledgement from {sender}")
+
+# Daily review refresh
+@agent.on_interval(period=REFRESH_INTERVAL_SECONDS)
+async def daily_review_refresh(ctx: Context):
+    return #TODO SKIP NEW REVIEWS FOR NOW
+    """Daily review refresh task"""
+    try:
+        ctx.logger.info("Starting daily review refresh...")
         
         # Pull new reviews
-        logger.info("Pulling new reviews...")
+        ctx.logger.info("Pulling new reviews...")
         restaurant_agent.pull_reviews()
-        logger.info("Reviews pulled, checking status...")
+        ctx.logger.info("Reviews pulled, checking status...")
         
-        # Check snapshot status every 10 seconds until all are READY
+        # Check snapshot status every 30 seconds until all are READY
         snapshots = restaurant_agent.database_handler.get_all_snapshots()
-        logger.info(f"Total snapshots: {len(snapshots)}")
+        ctx.logger.info(f"Total snapshots: {len(snapshots)}")
         
         while not all(snapshot.status == Status.READY.value for snapshot in snapshots):
-            logger.info("Checking snapshot status...")
+            ctx.logger.info("Checking snapshot status...")
             snapshots_status = [{"id": s.snapshot_id, "status": s.status, "source": s.source} for s in snapshots]
-            logger.info(f"Snapshot statuses: {snapshots_status}")
+            ctx.logger.info(f"Snapshot statuses: {snapshots_status}")
             
             restaurant_agent.update_pull_status()
             
             # Refresh snapshots after update
             snapshots = restaurant_agent.database_handler.get_all_snapshots()
             
-            logger.info("Waiting 10 seconds before next status check...")
-            await asyncio.sleep(10)
+            ctx.logger.info("Waiting 30 seconds before next status check...")
+            await asyncio.sleep(30)
         
-        logger.info("All snapshots are ready, proceeding with LLM processing...")
+        ctx.logger.info("All snapshots are ready, proceeding with LLM processing...")
         
         # Process reviews with LLM
-        logger.info("Starting LLM processing of reviews...")
+        ctx.logger.info("Starting LLM processing of reviews...")
         stats = restaurant_agent.process_reviews_with_llm()
         
-        logger.info(f"LLM Processing Results:")
-        logger.info(f"  Total processed: {stats['processed_count']}")
-        logger.info(f"  Successful: {stats['success_count']}")
-        logger.info(f"  Failed: {stats['failed_count']}")
-        logger.info(f"  Total API tokens: {stats['total_tokens']}")
+        ctx.logger.info(f"LLM Processing Results:")
+        ctx.logger.info(f"  Total processed: {stats['processed_count']}")
+        ctx.logger.info(f"  Successful: {stats['success_count']}")
+        ctx.logger.info(f"  Failed: {stats['failed_count']}")
+        ctx.logger.info(f"  Total API tokens: {stats['total_tokens']}")
         
         # Generate analytics report
-        logger.info("Generating analytics report...")
+        ctx.logger.info("Generating analytics report...")
         try:
             report = restaurant_agent.generate_analytics(output_path="analytics_report.json")
-            logger.info("Analytics report generated and exported to analytics_report.json")
+            ctx.logger.info("Analytics report generated and exported to analytics_report.json")
         except Exception as e:
-            logger.error(f"Error generating analytics: {e}")
+            ctx.logger.error(f"Error generating analytics: {e}")
         
-        logger.info("Background review processing completed.")
-        
-    except Exception as e:
-        logger.error(f"Error in background review processing: {e}")
-
-# API Endpoints
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {"message": "Restaurant Review API is running", "version": "1.0.0"}
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
-@app.post("/api/trigger-pull")
-async def trigger_pull(background_tasks: BackgroundTasks, api_key: str = Depends(verify_api_key)):
-    """Trigger review pulling and processing"""
-    try:
-        logger.info("Triggering review pull via API...")
-        
-        # Add background task
-        background_tasks.add_task(process_reviews_background)
-        
-        return APIResponse(
-            success=True,
-            message="Review processing started in background",
-            data={"status": "processing"}
-        )
+        ctx.logger.info("Daily review refresh completed successfully")
         
     except Exception as e:
-        logger.error(f"Error triggering review pull: {e}")
-        raise HTTPException(status_code=500, detail=f"Error triggering review pull: {str(e)}")
+        ctx.logger.error(f"Error in daily review refresh: {e}")
 
-@app.get("/api/status")
-async def get_status(api_key: str = Depends(verify_api_key)):
-    """Get current review processing status"""
-    try:
-        logger.info("Getting status via API...")
-        
-        # Get current status
-        all_reviews = restaurant_agent.database_handler.get_all_reviews()
-        processed_reviews = [r for r in all_reviews if r.llm_processed]
-        snapshots = restaurant_agent.database_handler.get_all_snapshots()
-        
-        snapshots_status = [{"id": s.snapshot_id, "status": s.status, "source": s.source} for s in snapshots]
-        
-        return StatusResponse(
-            total_reviews=len(all_reviews),
-            processed_reviews=len(processed_reviews),
-            snapshots_count=len(snapshots),
-            snapshots_status=snapshots_status,
-            last_updated=datetime.now().isoformat()
-        )
-        
-    except Exception as e:
-        logger.error(f"Error getting status: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting status: {str(e)}")
-
-@app.get("/api/analytics")
-async def get_analytics(api_key: str = Depends(verify_api_key)):
-    """Get analytics report"""
-    try:
-        logger.info("Generating analytics via API...")
-        
-        # Generate fresh analytics report
-        report = restaurant_agent.generate_analytics()
-        
-        return AnalyticsResponse(
-            report=report,
-            generated_at=datetime.now().isoformat()
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating analytics: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generating analytics: {str(e)}")
+# Register the protocol with the agent
+agent.include(protocol, publish_manifest=True)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    agent.run()
