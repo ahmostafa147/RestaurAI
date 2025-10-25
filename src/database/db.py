@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import uuid
 import os
+from ..models.ingredient import IngredientJSONEncoder
 
 db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "restaurant_data")
 client = chromadb.PersistentClient(path=db_path)
@@ -21,7 +22,7 @@ def log_event(key: str, event_type: str, data: dict):
     event_id = str(uuid.uuid4())
     collection.add(
         ids=[event_id],
-        documents=[json.dumps(data)],
+        documents=[json.dumps(data, cls=IngredientJSONEncoder)],
         metadatas={"type": event_type, "key": key, "timestamp": datetime.now().isoformat()}
     )
 
@@ -40,7 +41,7 @@ def set_data(key: str, category_name: str, data: dict):
     # Add new/updated data
     collection.add(
         ids=[data_id],
-        documents=[json.dumps(data)],
+        documents=[json.dumps(data, cls=IngredientJSONEncoder)],
         metadatas={"type": "data", "key": key, "category": category_name, "timestamp": datetime.now().isoformat()}
     )
 

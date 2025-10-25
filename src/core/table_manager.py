@@ -26,28 +26,6 @@ class TableManager:
         """Get all reservations"""
         return [e["data"] for e in db.get_events(self.restaurant_key, "reservation")]
     
-    def get_reservation_by_id(self, reservation_id: int) -> Dict:
-        """Get a specific reservation by ID"""
-        reservations = self.get_reservations()
-        for reservation in reservations:
-            if reservation["id"] == reservation_id:
-                return reservation
-        return None
-    
-    def update_reservation_status(self, reservation_id: int, status: str) -> bool:
-        """Update the status of a reservation"""
-        reservation = self.get_reservation_by_id(reservation_id)
-        if reservation:
-            reservation["status"] = status
-            # Log the update
-            db.log_event(self.restaurant_key, "reservation_update", {
-                "reservation_id": reservation_id,
-                "new_status": status
-            })
-            return True
-        return False
-    
-    # Table management methods
     def get_tables(self) -> List[Dict]:
         """Return all tables as dictionaries"""
         return [table.to_dict() for table in self.tables]
@@ -76,6 +54,8 @@ class TableManager:
         """Seat a party at a table"""
         if self.update_table_status(table_number, "occupied"):
             db.log_event(self.restaurant_key, "seat", {"table": table_number, "status": "occupied"})
+        #Raise exception if table is invalid
+        raise ValueError(f"Table {table_number} is not available")
 
     def clear_table(self, table_number: int):
         """Clear a table after service"""
