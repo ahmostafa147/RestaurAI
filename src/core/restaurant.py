@@ -1,15 +1,16 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
+from dataclasses import dataclass
 from ..database import db
-
-MENU = {
-    "appetizers": [{"id": 1, "name": "Caesar Salad", "price": 8.99}, {"id": 2, "name": "Wings", "price": 12.99}],
-    "entrees": [{"id": 3, "name": "Burger", "price": 14.99}, {"id": 4, "name": "Steak", "price": 24.99}, {"id": 5, "name": "Pasta", "price": 16.99}],
-    "desserts": [{"id": 6, "name": "Cheesecake", "price": 7.99}, {"id": 7, "name": "Ice Cream", "price": 5.99}]
-}
+from ..models.menu import MenuItem
+from ..models.table import Table
+from ..models.ingredient import Ingredient
+from .ingredient_manager import IngredientManager
+from .table_manager import TableManager
+from .order_manager import OrderManager
 
 class Restaurant:
-    def __init__(self, name: str = None, key: str = None):
+    def __init__(self, name: str = None, key: str = None, menu: Dict[str, List[MenuItem]] = None, tables: List[Table] = None, inventory: Dict[int, Ingredient] = None):
         if key:
             self.key = key
             restaurant_data = db.get_restaurant(key)
@@ -17,36 +18,51 @@ class Restaurant:
         else:
             self.name = name
             self.key = db.create_restaurant(name)
+        
+        # Initialize managers
+        self.ingredient_manager = IngredientManager(self.key, inventory)
+        self.table_manager = TableManager(self.key, tables)
+        self.order_manager = OrderManager(self.key, menu, self.ingredient_manager)
+    
 
+    # Core restaurant operations
     def reserve_table(self, name: str, party_size: int, time: str) -> Dict:
-        reservation = {"id": len(self.get_reservations()) + 1, "name": name, "party_size": party_size, "time": time, "status": "confirmed"}
-        db.log_event(self.key, "reservation", reservation)
-        return reservation
-
-    def place_order(self, table_number: int, item_ids: List[int]) -> Dict:
-        order_items = []
-        total = 0
-        for item_id in item_ids:
-            for category in MENU.values():
-                for item in category:
-                    if item["id"] == item_id:
-                        order_items.append(item)
-                        total += item["price"]
-        order = {"id": len(self.get_orders()) + 1, "table": table_number, "items": order_items, "total": round(total, 2), "status": "pending", "timestamp": datetime.now().isoformat()}
-        db.log_event(self.key, "order", order)
-        return order
-
+        """Make a reservation"""
+        return self.table_manager.make_reservation(name, party_size, time)
+    
+    def create_ticket(self, table_number: int) -> Dict:
+        """Create a new ticket for a table"""
+        return self.order_manager.create_ticket(table_number)
+    
+    def place_order(self, table_number: int, item_id: int, ticket_id: int = None) -> Dict:
+        """Place a new order for a single item"""
+        return self.order_manager.place_order(table_number, item_id, ticket_id)
+    
+    def get_tickets(self) -> List[Dict]:
+        """Get all tickets"""
+        return self.order_manager.get_tickets()
+    
+    def get_ticket(self, ticket_id: int) -> Optional[Dict]:
+        """Get a specific ticket by ID"""
+        return self.order_manager.get_ticket(ticket_id)
+    
+    def get_ticket_orders(self, ticket_id: int) -> List[Dict]:
+        """Get all orders for a specific ticket"""
+        return self.order_manager.get_ticket_orders(ticket_id)
+    
+    def get_table_orders(self, table_number: int) -> List[Dict]:
+        """Get all orders for a specific table"""
+        return self.order_manager.get_table_orders(table_number)
+    
+    def close_ticket(self, ticket_id: int) -> bool:
+        """Close a ticket and calculate total"""
+        return self.order_manager.close_ticket(ticket_id)
+    
     def seat_party(self, table_number: int):
-        db.log_event(self.key, "seat", {"table": table_number, "status": "occupied"})
+        """Seat a party at a table"""
+        return self.table_manager.seat_party(table_number)
 
     def clear_table(self, table_number: int):
-        db.log_event(self.key, "clear", {"table": table_number, "status": "available"})
-
-    def get_reservations(self) -> List[Dict]:
-        return [e["data"] for e in db.get_events(self.key, "reservation")]
-
-    def get_orders(self) -> List[Dict]:
-        return [e["data"] for e in db.get_events(self.key, "order")]
-
-    def get_menu(self) -> Dict:
-        return MENU
+        """Clear a table after service"""
+        return self.table_manager.clear_table(table_number)
+    

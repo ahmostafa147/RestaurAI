@@ -25,6 +25,38 @@ def log_event(key: str, event_type: str, data: dict):
         metadatas={"type": event_type, "key": key, "timestamp": datetime.now().isoformat()}
     )
 
+def set_data(key: str, category_name: str, data: dict):
+    """Store/update data for a restaurant under a specific category"""
+    data_id = f"{key}_data_{category_name}"
+    
+    # Try to get existing data to update
+    try:
+        collection.get(ids=[data_id])
+        # If exists, delete and recreate (ChromaDB doesn't have direct update)
+        collection.delete(ids=[data_id])
+    except:
+        pass
+    
+    # Add new/updated data
+    collection.add(
+        ids=[data_id],
+        documents=[json.dumps(data)],
+        metadatas={"type": "data", "key": key, "category": category_name, "timestamp": datetime.now().isoformat()}
+    )
+
+def get_data(key: str, category_name: str) -> dict:
+    """Retrieve data for a restaurant under a specific category"""
+    data_id = f"{key}_data_{category_name}"
+    
+    try:
+        results = collection.get(ids=[data_id])
+        if results["ids"]:
+            return json.loads(results["documents"][0])
+    except:
+        pass
+    
+    return {}
+
 def get_restaurant(key: str) -> dict:
     results = collection.get(where={"$and": [{"type": "restaurant"}, {"key": key}]})
     if results["ids"]:
