@@ -1,0 +1,74 @@
+# Restaurant Review Collection System - Dependencies
+# Core dependencies for the restaurant review cataloging system
+
+# HTTP client for web scraping
+aiohttp>=3.8.0
+aiohttp-socks>=0.8.0
+
+# Data processing and analysis
+pandas>=1.5.0
+numpy>=1.21.0
+
+# Web scraping and parsing
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+html5lib>=1.1
+
+# Configuration and environment
+python-dotenv>=0.19.0
+pydantic>=1.10.0
+
+# Logging and monitoring
+structlog>=22.1.0
+colorlog>=6.7.0
+
+# Data validation
+pydantic>=1.10.0
+
+# Async utilities
+asyncio-throttle>=1.0.0
+
+# Testing (development dependencies)
+pytest>=7.0.0
+pytest-asyncio>=0.19.0
+pytest-mock>=3.8.0
+pytest-cov>=4.0.0
+
+# Code quality (development dependencies)
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.950
+isort>=5.10.0
+
+# Documentation (development dependencies)
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Development tools
+jupyter>=1.0.0
+ipython>=8.0.0
+
+
+#Eval
+anthropic>=0.3.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+holidays>=0.18
+python-dateutil>=2.8.0
+
+# Optional: Advanced NLP and sentiment analysis
+# textblob>=0.17.0
+# vaderSentiment>=3.3.0
+# transformers>=4.20.0
+# torch>=1.12.0
+
+# Optional: Database support
+# sqlalchemy>=1.4.0
+# psycopg2-binary>=2.9.0
+
+# Optional: Caching and performance
+# redis>=4.3.0
+# aiocache>=0.12.0
+
+# Optional: Monitoring and metrics
+# prometheus-client>=0.14.0

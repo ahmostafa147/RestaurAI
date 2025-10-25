@@ -1,0 +1,5 @@
+token = "b8638bedc85ffb45fd112f12d9b4b522e26cfb228d2b7ca8bf8ad13539095b6c"
+google_map_url = "https://www.google.com/maps/place/Causwells/@37.8012624,-122.4428722,17.5z/data=!4m6!3m5!1s0x808580d439f7c8ef:0x4535d182f05476fe!8m2!3d37.8003429!4d-122.4420181!16s%2Fg%2F1q66z5g1s?entry=ttu"
+yelp_url = "https://www.yelp.com/biz/causwells-san-francisco-5"
+yelp_bright_data_url = "https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_lgzhlu9323u3k24jkv&notify=false&include_errors=true"
+google_bright_data_url = "https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_luzfs1dn2oa0teb81&notify=false&include_errors=true"
