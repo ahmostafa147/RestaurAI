@@ -1,4 +1,3 @@
-from typing import Union
 class Snapshot:
     def __init__(self, snapshot_id: str, source: str, status: str = "ready"):
         self.snapshot_id = snapshot_id

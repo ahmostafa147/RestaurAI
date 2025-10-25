@@ -63,10 +63,13 @@ class DatabaseHandler:
     # Review methods
     def save_reviews(self, reviews: List[Review], overwrite: bool = False) -> None:
         data = self._get_database_data()
-        if overwrite:
-            data['reviews'] = [review.to_dict() for review in reviews]
-        else:
-            data['reviews'].extend([review.to_dict() for review in reviews])
+        #Check if the review id already exists, if it does, remove the old version.
+        for r in reviews:
+            for dr in data['reviews']:
+                if dr['review_id'] == r.review_id:
+                    data['reviews'].remove(dr)
+                    break
+            data['reviews'].append(r.to_dict())
         self._save_database_data(data)
     
     def get_reviews(self, review_id: int) -> Review:

@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2025-10-25T03:37:11.443844",
+    "generated_at": "2025-10-25T08:56:48.181144",
     "total_reviews": 3,
     "processed_reviews": 3,
     "processing_coverage": 100.0
@@ -14,8 +14,8 @@
     },
     "rating_breakdown": {
       "rating_distribution": {
-        "5.0": 2,
-        "1.0": 1
+        "1.0": 1,
+        "5.0": 2
       },
       "aspect_ratings": {
         "food": 1,
@@ -26,18 +26,18 @@
     },
     "platform_comparison": {
       "platforms": {
-        "google": {
-          "count": 2,
-          "response_count": 0,
-          "processed_count": 2,
-          "average_rating": 5.0,
-          "response_rate": 0.0
-        },
         "yelp": {
           "count": 1,
           "response_count": 0,
           "processed_count": 1,
           "average_rating": 1.0,
+          "response_rate": 0.0
+        },
+        "google": {
+          "count": 2,
+          "response_count": 0,
+          "processed_count": 2,
+          "average_rating": 5.0,
           "response_rate": 0.0
         }
       }
@@ -50,17 +50,6 @@
   },
   "menu_analytics": {
     "items": [
-      {
-        "name": "Espresso Martini",
-        "mention_count": 1,
-        "positive_count": 1,
-        "negative_count": 0,
-        "mixed_count": 0,
-        "sentiment_score": 1.0,
-        "aspects": {
-          "taste": 1
-        }
-      },
       {
         "name": "Layered Potatoes",
         "mention_count": 1,
@@ -81,6 +70,17 @@
         "negative_count": 1,
         "mixed_count": 0,
         "sentiment_score": -1.0,
+        "aspects": {
+          "taste": 1
+        }
+      },
+      {
+        "name": "Espresso Martini",
+        "mention_count": 1,
+        "positive_count": 1,
+        "negative_count": 0,
+        "mixed_count": 0,
+        "sentiment_score": 1.0,
         "aspects": {
           "taste": 1
         }
@@ -152,8 +152,8 @@
         "review_count": 2,
         "average_rating": 3.0,
         "rating_distribution": {
-          "5.0": 1,
-          "1.0": 1
+          "1.0": 1,
+          "5.0": 1
         }
       },
       "Friday": {
@@ -165,18 +165,18 @@
       }
     },
     "by_month": {
-      "2025-10": {
-        "review_count": 2,
-        "average_rating": 5.0,
-        "rating_distribution": {
-          "5.0": 2
-        }
-      },
       "2025-03": {
         "review_count": 1,
         "average_rating": 1.0,
         "rating_distribution": {
           "1.0": 1
+        }
+      },
+      "2025-10": {
+        "review_count": 2,
+        "average_rating": 5.0,
+        "rating_distribution": {
+          "5.0": 2
         }
       }
     },
@@ -280,8 +280,8 @@
           "review_count": 2,
           "average_rating": 3.0,
           "rating_distribution": {
-            "5.0": 1,
-            "1.0": 1
+            "1.0": 1,
+            "5.0": 1
           },
           "percentage_of_total": 66.7
         }
@@ -304,9 +304,9 @@
       "competitor_mention": 0.0
     },
     "sentiment_distribution": {
+      "negative": 1,
       "neutral": 1,
-      "positive": 1,
-      "negative": 1
+      "positive": 1
     },
     "top_positive_phrases": {
       "best espresso martini I've ever tasted in my life": 1,
