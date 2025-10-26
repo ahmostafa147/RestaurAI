@@ -68,7 +68,12 @@ async def handle_fast_chat(ctx: Context, restaurant_id: str = None) -> ChatRespo
     """Handle GET requests for analytics report"""
     try:
         if not restaurant_id:
-            return ChatResponse(response=json.dumps({"error": "restaurant_id parameter is required"}))
+            restaurant_ids = list(restaurant_agent.database_handler.get_all_restaurant_ids())
+            resp = {
+                "error": "restaurant_id parameter is required",
+                "available_restaurant_ids": restaurant_ids
+            }
+            return ChatResponse(response=json.dumps(resp))
         
         # Generate analytics for specific restaurant
         engine = AnalyticsEngine(restaurant_agent.database_handler)
