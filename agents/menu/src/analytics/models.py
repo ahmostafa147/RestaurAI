@@ -61,11 +61,21 @@ class SentimentIntegration(BaseModel):
 
 
 class LLMInsights(BaseModel):
-    preparation_insights: Dict[str, PreparationInsight]
-    day_part_analysis: DayPartAnalysis
-    trend_observations: List[str]
-    actionable_suggestions: List[str]
-    sentiment_integration: SentimentIntegration
+    preparation_insights: Dict[str, PreparationInsight] = Field(default_factory=dict)
+    day_part_analysis: DayPartAnalysis = Field(default_factory=lambda: DayPartAnalysis(
+        overall_restaurant=OverallDayPartAnalysis(
+            primary_day_parts=[],
+            categorization_rationale=""
+        ),
+        per_item={}
+    ))
+    trend_observations: List[str] = Field(default_factory=list)
+    actionable_suggestions: List[str] = Field(default_factory=list)
+    sentiment_integration: SentimentIntegration = Field(default_factory=lambda: SentimentIntegration(
+        positive_items=[],
+        negative_items=[],
+        improvement_opportunities=[]
+    ))
 
 
 class LLMErrorResponse(BaseModel):

@@ -7,6 +7,8 @@ import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
+from langchain_core.runnables.config import P
+
 # Add parent directories to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
@@ -97,9 +99,21 @@ Provide specific, actionable recommendations based on the data. Consider factors
 - Menu item popularity
 - Seasonal variations
 
-{format_instructions}"""),
-                ("human", """Please analyze the following restaurant inventory data and provide comprehensive insights:
+IMPORTANT: You MUST provide ALL required fields including inventory_turnover_insights with specific recommendations about inventory turnover rates, stock rotation strategies, and managing item lifecycle.
 
+{format_instructions}"""),
+                ("human", """Please analyze the following restaurant inventory data and provide comprehensive insights.
+
+MANDATORY: You MUST include all required fields in your response, including:
+- reorder_suggestions: List of reorder recommendations
+- critical_items: List of ingredient IDs that are most critical
+- optimization_tips: Tips for optimizing inventory management
+- seasonal_recommendations: Seasonal inventory adjustments
+- cost_optimization_suggestions: Cost saving recommendations
+- supplier_analysis: Analysis of supplier performance
+- inventory_turnover_insights: Specific recommendations about inventory turnover rates, stock rotation strategies, and managing item lifecycle
+
+Context:
 {context}""")
             ])
             
@@ -115,7 +129,7 @@ Provide specific, actionable recommendations based on the data. Consider factors
             return insights
             
         except Exception as e:
-            # Return error response
+            print(f"Error generating insights: {str(e)}")
             return LLMInsights(
                 reorder_suggestions=[],
                 critical_items=[],

@@ -154,8 +154,9 @@ async def update_inventory_report(ctx: Context):
     global latest_report
     try:
         print("Updating multi-restaurant inventory report...")
-        latest_report = ingredient_agent.generate_multi_restaurant_report()
-        print("Multi-restaurant inventory report updated")
+        data_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'inventory_report.json')
+        latest_report = ingredient_agent.generate_multi_restaurant_report(data_path)
+        print("Multi-restaurant inventory report updated")  
     except Exception as e:
         ctx.logger.error(f"Error updating inventory report: {e}")
 

@@ -85,8 +85,20 @@ class LLMAnalyzer:
             - Customer sentiment and review patterns
             - Business optimization opportunities
             
+            IMPORTANT: You MUST provide ALL required fields in your response.
+            
             {format_instructions}"""),
-            ("human", "Analyze this restaurant data:\n\n{context}")
+            ("human", """Analyze this restaurant data and provide comprehensive insights.
+
+MANDATORY: You MUST include all required fields in your response, including:
+- preparation_insights: Dictionary of preparation insights for each menu item
+- day_part_analysis: Overall and per-item day-part analysis
+- trend_observations: List of trend observations
+- actionable_suggestions: List of actionable suggestions for optimization
+- sentiment_integration: Integration of customer sentiment analysis
+
+Context:
+{context}""")
         ])
         
         # Create the chain with structured output parsing
