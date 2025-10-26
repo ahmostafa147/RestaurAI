@@ -1,14 +1,15 @@
 # RestaurAI
 
-Restaurant management system with ChromaDB persistence and MCP server.
+AI-powered restaurant operations suite with 6 autonomous agents.
 
 ## Structure
 
-- `src/core/` - Restaurant business logic
-- `src/database/` - ChromaDB operations
-- `src/mcp/` - MCP server
+- `src/core/` - Restaurant business logic (inventory, orders, tables)
+- `src/database/` - ChromaDB persistence
+- `src/mcp/` - MCP server (FastAPI + SSE)
 - `src/agents/` - AI agents (coming soon)
-- `tests/` - Test files
+- `frontend/` - React + TypeScript dashboard
+- `tests/` - Test suite
 - `data/` - Local data storage
 
 ## Usage
@@ -20,13 +21,38 @@ r = Restaurant("Tony's Diner")
 r.reserve_table("John", 4, "7:00 PM")
 ```
 
-## Run MCP Server
+## Quick Start
+
+### Backend (MCP Server)
 
 ```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run MCP server
 python src/mcp/http_server.py
 ```
 
-Runs on `http://127.0.0.1:8001` with SSE transport.
+Server runs on `http://127.0.0.1:8001` with SSE transport.
+
+### Frontend (Dashboard)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Dashboard runs on `http://localhost:3000`
+
+## Agent Suite
+
+- **Reservation Agent**: Bookings & table optimization
+- **Inventory Agent**: Stock tracking & auto-ordering
+- **Review Agent**: Monitor Yelp/Google reviews
+- **Staff Agent**: Shift scheduling & swap requests
+- **Menu Agent**: Sales analytics & specials optimization
+- **Order Agent**: Kitchen flow & order tracking
 
 ## Expose with ngrok
 
