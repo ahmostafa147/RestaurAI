@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Dict, Optional
 from ..models.menu import MenuItem
+from ..models.ingredient import Ingredient
 from ..database import db
 from .ingredient_manager import IngredientManager
 
@@ -11,10 +12,18 @@ class OrderManager:
     def __init__(self, restaurant_key: str, menu: Dict[str, List[MenuItem]], ingredient_manager: IngredientManager):
         """Initialize order manager with restaurant key, menu, and ingredient manager"""
         self.restaurant_key = restaurant_key
-        self.menu = menu
         self.ingredient_manager = ingredient_manager
         self.tickets = self._load_tickets()
         self.ticket_counter = self._load_ticket_counter()
+        
+        # Load or set menu
+        if menu is not None:
+            # Save menu to database if provided
+            self.menu = menu
+            self._save_menu()
+        else:
+            # Load menu from database
+            self.menu = self._load_menu()
     
     def _load_tickets(self) -> List[Dict]:
         """Load active tickets from database"""
@@ -25,6 +34,55 @@ class OrderManager:
         """Load ticket counter from database"""
         counter_data = db.get_data(self.restaurant_key, "ticket_counter")
         return counter_data.get("counter", 0)
+    
+    def _load_menu(self) -> Dict[str, List[MenuItem]]:
+        """Load menu from database"""
+        menu_data = db.get_data(self.restaurant_key, "menu")
+        if not menu_data:
+            return {}
+        
+        # Convert dict data back to MenuItem objects
+        menu = {}
+        for category, items_data in menu_data.items():
+            menu[category] = []
+            for item_dict in items_data:
+                # Convert ingredients
+                ingredients = []
+                for ing_dict in item_dict.get('ingredients', []):
+                    ingredient = Ingredient(
+                        id=ing_dict['id'],
+                        name=ing_dict['name'],
+                        quantity=ing_dict['quantity'],
+                        unit=ing_dict['unit'],
+                        available=ing_dict.get('available', True),
+                        cost=ing_dict.get('cost', 0.0),
+                        supplier=ing_dict.get('supplier', '')
+                    )
+                    ingredients.append(ingredient)
+                
+                # Create MenuItem
+                menu_item = MenuItem(
+                    id=item_dict['id'],
+                    name=item_dict['name'],
+                    price=item_dict['price'],
+                    category=category,
+                    description=item_dict.get('description'),
+                    available=item_dict.get('available', True),
+                    ingredients=ingredients
+                )
+                menu[category].append(menu_item)
+        
+        return menu
+    
+    def _save_menu(self):
+        """Save menu to database"""
+        # Convert menu to serializable format
+        menu_data = {}
+        for category, items in self.menu.items():
+            menu_data[category] = [item.to_dict() for item in items]
+        
+        # Save to database
+        db.set_data(self.restaurant_key, "menu", menu_data)
     
     def _save_ticket_counter(self):
         """Save ticket counter to database"""

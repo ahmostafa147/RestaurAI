@@ -88,5 +88,25 @@ def get_orders(key: str) -> str:
     except Exception as e:
         return json.dumps({"error": str(e)})
 
+@mcp.tool()
+def generate_menu_analytics(key: str, review_analytics_path: str = None) -> str:
+    """Generate comprehensive menu analytics report."""
+    try:
+        # Import MenuAgent here to avoid circular imports
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from menu_agent.src.menu_agent import MenuAgent
+        
+        # Initialize menu agent
+        menu_agent = MenuAgent()
+        
+        # Generate analytics report
+        report = menu_agent.generate_analytics_report(key, review_analytics_path)
+        
+        return json.dumps(report, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
 if __name__ == "__main__":
     mcp.run(transport="sse")

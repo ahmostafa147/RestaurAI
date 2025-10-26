@@ -10,6 +10,8 @@ class Ingredient:
     quantity: float
     unit: str
     available: bool = True
+    cost: float = 0.0  # Cost per unit
+    supplier: str = ""  # Supplier name
     
     def to_dict(self) -> Dict:
         """Convert Ingredient to dictionary for JSON serialization"""
