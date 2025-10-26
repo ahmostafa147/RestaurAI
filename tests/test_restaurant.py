@@ -9,17 +9,17 @@ def create_sample_menu():
     """Create a sample menu for testing"""
     return {
         "appetizers": [
-            MenuItem(1, "Caesar Salad", 8.99, "appetizers", "Fresh romaine lettuce with parmesan and croutons", [Ingredient(1, "Romaine Lettuce", 1.0, "head")]),
-            MenuItem(2, "Wings", 12.99, "appetizers", "Buffalo wings with your choice of sauce", [Ingredient(2, "Chicken", 1.0, "lbs")]),
+            MenuItem(1, "Caesar Salad", 8.99, "appetizers", "Fresh romaine lettuce with parmesan and croutons", True, [Ingredient(1, "Romaine Lettuce", 1.0, "head")]),
+            MenuItem(2, "Wings", 12.99, "appetizers", "Buffalo wings with your choice of sauce", True, [Ingredient(2, "Chicken", 1.0, "lbs")]),
         ],
         "entrees": [
-            MenuItem(3, "Burger", 14.99, "entrees", "Classic beef burger with fries", [Ingredient(3, "Beef", 1.0, "lbs"), Ingredient(4, "Bread", 1.0, "slices"), Ingredient(5, "Cheese", 1.0, "slices"), Ingredient(6, "Lettuce", 1.0, "leaves"), Ingredient(7, "Tomato", 1.0, "slices"), Ingredient(8, "Onion", 1.0, "slices")]),
-            MenuItem(4, "Steak", 24.99, "entrees", "Premium ribeye steak cooked to perfection", [Ingredient(9, "Ribeye Steak", 1.0, "lbs")]),
-            MenuItem(5, "Pasta", 16.99, "entrees", "House-made pasta with marinara sauce", [Ingredient(10, "Pasta", 1.0, "lbs"), Ingredient(11, "Tomato Sauce", 1.0, "cups"), Ingredient(12, "Garlic", 1.0, "cloves"), Ingredient(13, "Basil", 1.0, "leaves")]),
+            MenuItem(3, "Burger", 14.99, "entrees", "Classic beef burger with fries", True, [Ingredient(3, "Beef", 1.0, "lbs"), Ingredient(4, "Bread", 1.0, "slices"), Ingredient(5, "Cheese", 1.0, "slices"), Ingredient(6, "Lettuce", 1.0, "leaves"), Ingredient(7, "Tomato", 1.0, "slices"), Ingredient(8, "Onion", 1.0, "slices")]),
+            MenuItem(4, "Steak", 24.99, "entrees", "Premium ribeye steak cooked to perfection", True, [Ingredient(9, "Ribeye Steak", 1.0, "lbs")]),
+            MenuItem(5, "Pasta", 16.99, "entrees", "House-made pasta with marinara sauce", True, [Ingredient(10, "Pasta", 1.0, "lbs"), Ingredient(11, "Tomato Sauce", 1.0, "cups"), Ingredient(12, "Garlic", 1.0, "cloves"), Ingredient(13, "Basil", 1.0, "leaves")]),
         ],
         "desserts": [
-            MenuItem(6, "Cheesecake", 7.99, "desserts", "New York style cheesecake", [Ingredient(6, "Cheesecake", 1.0, "lbs")]),
-            MenuItem(7, "Ice Cream", 5.99, "desserts", "Vanilla, chocolate, or strawberry", [Ingredient(7, "Ice Cream", 1.0, "lbs")]),
+            MenuItem(6, "Cheesecake", 7.99, "desserts", "New York style cheesecake", True, [Ingredient(14, "Cheesecake", 1.0, "lbs")]),
+            MenuItem(7, "Ice Cream", 5.99, "desserts", "Vanilla, chocolate, or strawberry", True, [Ingredient(15, "Ice Cream", 1.0, "lbs")]),
         ]
     }
 
@@ -65,9 +65,12 @@ sample_inventory = create_sample_inventory()
 r1 = Restaurant("Tony's Diner", menu=sample_menu, tables=sample_tables, inventory=sample_inventory)
 print(f"Created: {r1.name}, Key: {r1.key}")
 
+
 # Show available tables
 print(f"Available tables: {r1.get_tables()}")
 
+# Show inventory
+print(f"Menu: {r1.get_menu_dict()}")
 # Show inventory
 print(f"Inventory: {r1.get_inventory()}")
 
@@ -178,6 +181,7 @@ active_tickets_after = r1.get_tickets()
 print(f"Active tickets after closing: {active_tickets_after}")
 assert len(active_tickets_after) == 0, "Should have no active tickets after closing"
 
+
 # Load same restaurant with key
 r2 = Restaurant(key=r1.key)
 print(f"\nLoaded restaurant: {r2.name}")
@@ -192,7 +196,7 @@ beef_quantity = r2.get_ingredient(3).quantity
 chicken_quantity = r2.get_ingredient_by_name('Chicken').quantity
 print(f"Beef quantity after restart: {beef_quantity} lbs")
 print(f"Chicken quantity after restart: {chicken_quantity} lbs")
-assert beef_quantity == 20.0, f"Beef should be 20.0 lbs after restart (was {beef_quantity})"
+assert beef_quantity == 19.0, f"Beef should be 19.0 lbs after restart (was {beef_quantity}) - started at 15.0, added 5.0, consumed 1.0 by burger order"
 assert chicken_quantity == 20.0, f"Chicken should be 20.0 lbs after restart (was {chicken_quantity})"
 
 # Test ticket counter persistence
@@ -284,8 +288,8 @@ print(f"Remaining active tickets: {remaining_tickets}")
 assert len(remaining_tickets) == 1, "Should have 1 active ticket after closing second ticket (test ticket still open)"
 
 # Test order status updates
-print(f"\n--- Testing Order Status Updates ---")
-print("Order status updates require active tickets - skipping for now")
+print(f"\n--- Testing Order Status Updates ---") 
+print("Order status updates require active tickets -skipping for now")
 
 # Test menu item management
 print(f"\n--- Testing Menu Item Management ---")
@@ -323,4 +327,4 @@ assert len(r1.get_menu()) > 0, "Should have menu items"
 assert len(r1.get_tickets()) == 1, "Should have 1 active ticket (test ticket)"
 assert len(r1.get_orders()) == 0, "Should have no orders (all in closed tickets)"
 
-print("\n✅ All tests passed! The restaurant system is working correctly.")
+print("\nAll tests passed! The restaurant system is working correctly.")

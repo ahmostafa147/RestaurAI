@@ -27,7 +27,9 @@ class IngredientManager:
                 name=ingredient_dict["name"],
                 quantity=ingredient_dict["quantity"],
                 unit=ingredient_dict["unit"],
-                available=ingredient_dict.get("available", True)
+                available=ingredient_dict.get("available", True),
+                cost=ingredient_dict.get("cost", 0.0),
+                supplier=ingredient_dict.get("supplier", "")
             )
             inventory[ingredient_id] = ingredient
         
