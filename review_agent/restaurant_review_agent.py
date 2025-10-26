@@ -25,6 +25,7 @@ from uagents_core.contrib.protocols.chat import (
     EndSessionContent,
     chat_protocol_spec
 )
+from pydantic import BaseModel
 
 from main import RestaurantReviewAgent
 from scrapers.pull_dataset import Status
@@ -32,6 +33,13 @@ from scrapers.pull_dataset import Status
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Pydantic models for REST endpoint
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
 
 # Configuration
 REFRESH_INTERVAL_SECONDS = 86400  # 24 hours as constant variable
@@ -51,7 +59,20 @@ agent = Agent(
 # Initialize chat protocol
 protocol = Protocol(spec=chat_protocol_spec)
 
-# Chat message handler
+# REST endpoint for analytics report
+@agent.on_rest_get("/analytics", ChatResponse)
+async def handle_fast_chat(ctx: Context) -> ChatResponse:
+    """Handle GET requests for analytics report"""
+    try:
+        # Returns analytics report as json if exists, otherwise returns error
+        report = restaurant_agent.generate_analytics(output_path="analytics_report.json")
+        return ChatResponse(response=json.dumps(report, indent=2))
+    except FileNotFoundError:
+        return ChatResponse(response=json.dumps({"error": "Analytics report not found. Please wait for the daily refresh to complete."}))
+    except Exception as e:
+        ctx.logger.error(f"Error generating analytics: {e}")
+        return ChatResponse(response=json.dumps({"error": str(e)}))
+
 @protocol.on_message(ChatMessage)
 async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
     """Handle incoming chat messages and respond with analytics report"""
@@ -93,7 +114,7 @@ async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
                 msg_id=uuid4(),
                 content=[
                     TextContent(type="text", text=response),
-                    EndSessionContent(type="end_session", reason="success")
+                    EndSessionContent(type="end-session")
                 ]
             ))
             
@@ -108,7 +129,7 @@ async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
                 msg_id=uuid4(),
                 content=[
                     TextContent(type="text", text=f"Error processing request: {str(e)}"),
-                    EndSessionContent(type="end_session", reason="error")
+                    EndSessionContent(type="end-session")
                 ]
             ))
         except Exception as send_error:
