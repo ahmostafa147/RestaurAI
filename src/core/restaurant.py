@@ -119,7 +119,11 @@ class Restaurant:
         return self.order_manager.update_order_status(order_id, status)
     
     def get_menu(self) -> Dict:
-        """Get the restaurant menu"""
+        """Get the restaurant menu as MenuItem objects"""
+        return self.order_manager.menu
+    
+    def get_menu_dict(self) -> Dict:
+        """Get the restaurant menu as dictionaries (for compatibility)"""
         return self.order_manager.get_menu()
     
     def get_menu_item(self, item_id: int) -> Optional[MenuItem]:

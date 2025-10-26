@@ -38,7 +38,7 @@ class MenuAgent:
         try:
             # Load restaurant data
             restaurant = Restaurant(key=restaurant_key)
-            menu_data = restaurant.get_menu()
+            menu_data = restaurant.get_menu_dict()
             
             # Get all menu items for analysis
             all_menu_items = []

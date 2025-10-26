@@ -108,5 +108,65 @@ def generate_menu_analytics(key: str, review_analytics_path: str = None) -> str:
     except Exception as e:
         return json.dumps({"error": str(e)})
 
+@mcp.tool()
+def generate_inventory_report(key: str) -> str:
+    """Generate comprehensive inventory analytics report."""
+    try:
+        # Import IngredientAgent here to avoid circular imports
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from ingredient_agent.src.ingredient_agent import IngredientAgent
+        
+        # Initialize ingredient agent
+        ingredient_agent = IngredientAgent()
+        
+        # Generate inventory report
+        report = ingredient_agent.generate_inventory_report(key)
+        
+        return json.dumps(report, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+@mcp.tool()
+def get_low_stock_alerts(key: str) -> str:
+    """Get immediate low stock warnings for ingredients predicted to run out soon."""
+    try:
+        # Import IngredientAgent here to avoid circular imports
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from ingredient_agent.src.ingredient_agent import IngredientAgent
+        
+        # Initialize ingredient agent
+        ingredient_agent = IngredientAgent()
+        
+        # Get low stock alerts
+        alerts = ingredient_agent.get_low_stock_alerts(key)
+        
+        return json.dumps(alerts, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+@mcp.tool()
+def get_reorder_suggestions(key: str) -> str:
+    """Get LLM-powered reorder suggestions based on consumption patterns."""
+    try:
+        # Import IngredientAgent here to avoid circular imports
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from ingredient_agent.src.ingredient_agent import IngredientAgent
+        
+        # Initialize ingredient agent
+        ingredient_agent = IngredientAgent()
+        
+        # Get reorder suggestions
+        suggestions = ingredient_agent.get_reorder_suggestions(key)
+        
+        return json.dumps(suggestions, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
 if __name__ == "__main__":
     mcp.run(transport="sse")
