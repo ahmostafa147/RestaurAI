@@ -234,9 +234,11 @@ mcp_server.log
 prompts_cache/
 
 
-# Generated reports
+# Generated reports and data files
 reports/
-*.json
+**/inventory_report*.json
+**/analytics_report*.json
+**/database.json
 
 # Python cache
 __pycache__/

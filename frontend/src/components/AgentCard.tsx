@@ -19,11 +19,11 @@ const statusColors = {
 
 export function AgentCard({ title, description, icon: Icon, status, metrics, action }: AgentCardProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-lg">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-lg shadow-md">
               <Icon className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -39,9 +39,9 @@ export function AgentCard({ title, description, icon: Icon, status, metrics, act
         {metrics && metrics.length > 0 && (
           <div className="grid grid-cols-3 gap-4 mb-4">
             {metrics.map((metric, idx) => (
-              <div key={idx} className="text-center">
+              <div key={idx} className="text-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="text-2xl font-bold text-gray-900">{metric.value}</div>
-                <div className="text-xs text-gray-500">{metric.label}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide">{metric.label}</div>
               </div>
             ))}
           </div>

@@ -19,21 +19,40 @@ class RestaurantAPI {
   }
 
   async getInventoryMetrics(): Promise<InventoryMetrics> {
-    // TODO: Connect to inventory agent
-    return {
-      lowStockItems: 5,
-      totalItems: 47,
-      lastUpdated: new Date().toISOString()
-    };
+    try {
+      const res = await fetch('/ingredient-api/metrics');
+      const data = await res.json();
+      const metrics = JSON.parse(data.response);
+
+      return {
+        lowStockItems: metrics.lowStock?.length || 0,
+        totalItems: metrics.totalItems || 0,
+        lastUpdated: metrics.timestamp || new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Failed to fetch inventory metrics:', error);
+      return { lowStockItems: 0, totalItems: 0, lastUpdated: new Date().toISOString() };
+    }
   }
 
   async getReviewMetrics(): Promise<ReviewMetrics> {
-    // TODO: Connect to review agent
-    return {
-      unreadReviews: 8,
-      averageRating: 4.3,
-      flaggedIssues: 2
-    };
+    try {
+      const res = await fetch('/review-api/analytics');
+      const data = await res.json();
+      const analytics = JSON.parse(data.response);
+
+      const flaggedCount = analytics.reputation_insights?.anomaly_flags?.health_safety_concern || 0;
+      const unprocessed = analytics.metadata.total_reviews - analytics.metadata.processed_reviews;
+
+      return {
+        unreadReviews: unprocessed,
+        averageRating: analytics.basic_metrics.overall_performance.average_rating || 0,
+        flaggedIssues: flaggedCount
+      };
+    } catch (error) {
+      console.error('Failed to fetch review metrics:', error);
+      return { unreadReviews: 0, averageRating: 0, flaggedIssues: 0 };
+    }
   }
 
   async getStaffMetrics(): Promise<StaffMetrics> {
