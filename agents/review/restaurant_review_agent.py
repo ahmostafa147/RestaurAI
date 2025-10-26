@@ -69,7 +69,15 @@ async def handle_fast_chat(ctx: Context, restaurant_id: str = None) -> ChatRespo
     """Handle GET requests for analytics report"""
     try:
         if not restaurant_id:
-            restaurant_ids = list(restaurant_agent.database_handler.get_all_restaurant_ids())
+            restaurant_ids = []
+            try:
+                restaurants_file = os.path.join(os.path.dirname(__file__), '..', 'restaurants.json')
+                if os.path.exists(restaurants_file):
+                    with open(restaurants_file, 'r') as f:
+                        config = json.load(f)
+                        restaurant_ids = [r["id"] for r in config.get('restaurants', [])]
+            except Exception as e:
+                ctx.logger.error(f"Error loading restaurants: {e}")
             resp = {
                 "error": "restaurant_id parameter is required",
                 "available_restaurant_ids": restaurant_ids
