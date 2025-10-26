@@ -15,13 +15,13 @@ except ImportError:
     from env_config import token
 
 try:
-    from ..models.snapshot import Snapshot
+    from src.models.snapshot import Snapshot
 except ImportError:
     # Fallback when running from scrapers directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
-    from models.snapshot import Snapshot
+    from src.models.snapshot import Snapshot
 
 class Status(Enum):
     READY = 'ready'

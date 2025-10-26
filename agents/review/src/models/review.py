@@ -54,6 +54,10 @@ class Review:
     key_phrases: Optional[str] = None  # JSON string of key phrases
     anomaly_flags: Optional[str] = None  # JSON string of anomaly flags
     
+    # Restaurant identification (moved to end to fix dataclass ordering)
+    restaurant_id: str = None  # Restaurant identifier
+    restaurant_name: str = None  # Restaurant name
+    
     def __post_init__(self):
         """Post-initialization processing"""
         if self.fetched_timestamp is None:
@@ -66,7 +70,7 @@ class Review:
         Returns:
             Dictionary representation of the review
         """
-        return {
+        result = {
             'source': self.source,
             'review_id': self.review_id,
             'author_name': self.author_name,
@@ -97,14 +101,21 @@ class Review:
             'key_phrases': self.key_phrases,
             'anomaly_flags': self.anomaly_flags
         }
+        if self.restaurant_id is not None:
+            result['restaurant_id'] = self.restaurant_id
+        if self.restaurant_name is not None:
+            result['restaurant_name'] = self.restaurant_name
+        return result
     
     @classmethod
-    def from_google_maps(cls, data: dict) -> 'Review':
+    def from_google_maps(cls, data: dict, restaurant_id: str = None, restaurant_name: str = None) -> 'Review':
         """
         Create Review from Google Maps API data
         
         Args:
             data: Dictionary containing Google Maps review data
+            restaurant_id: Optional restaurant identifier
+            restaurant_name: Optional restaurant name
             
         Returns:
             Review instance
@@ -146,16 +157,20 @@ class Review:
             fetched_timestamp=fetched_timestamp,
             sentiment_score=None,  # Will be computed separately
             photos_attached=photos_count,
-            owner_response_date=data.get('response_date')
+            owner_response_date=data.get('response_date'),
+            restaurant_id=restaurant_id,
+            restaurant_name=restaurant_name
         )
     
     @classmethod
-    def from_yelp(cls, data: dict) -> 'Review':
+    def from_yelp(cls, data: dict, restaurant_id: str = None, restaurant_name: str = None) -> 'Review':
         """
         Create Review from Yelp API data
         
         Args:
             data: Dictionary containing Yelp review data
+            restaurant_id: Optional restaurant identifier
+            restaurant_name: Optional restaurant name
             
         Returns:
             Review instance
@@ -197,17 +212,21 @@ class Review:
             fetched_timestamp=fetched_timestamp,
             sentiment_score=None,  # Will be computed separately
             photos_attached=photos_count,
-            owner_response_date=None  # Not in Yelp data
+            owner_response_date=None,  # Not in Yelp data
+            restaurant_id=restaurant_id,
+            restaurant_name=restaurant_name
         )
     
     @classmethod
-    def from_api_response(cls, data: dict, source: str = None) -> 'Review':
+    def from_api_response(cls, data: dict, source: str = None, restaurant_id: str = None, restaurant_name: str = None) -> 'Review':
         """
         Smart factory method that detects the source and creates Review accordingly
         
         Args:
             data: Dictionary containing review data
             source: Optional source hint ('google' or 'yelp')
+            restaurant_id: Optional restaurant identifier
+            restaurant_name: Optional restaurant name
             
         Returns:
             Review instance
@@ -225,9 +244,9 @@ class Review:
                 raise ValueError(f"Cannot determine source from data keys: {list(data.keys())[:10]}")
         
         if source == 'google':
-            return cls.from_google_maps(data)
+            return cls.from_google_maps(data, restaurant_id, restaurant_name)
         elif source == 'yelp':
-            return cls.from_yelp(data)
+            return cls.from_yelp(data, restaurant_id, restaurant_name)
         else:
             raise ValueError(f"Unknown source: {source}")
 
@@ -288,7 +307,9 @@ class Review:
             operational_insights=data.get('operational_insights'),
             visit_context=data.get('visit_context'),
             key_phrases=data.get('key_phrases'),
-            anomaly_flags=data.get('anomaly_flags')
+            anomaly_flags=data.get('anomaly_flags'),
+            restaurant_id=data.get('restaurant_id'),
+            restaurant_name=data.get('restaurant_name')
         )
     
     def normalize_rating(self, source_scale: int = 5) -> float:

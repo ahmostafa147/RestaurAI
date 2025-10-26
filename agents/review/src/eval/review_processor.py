@@ -182,7 +182,9 @@ class ReviewProcessor:
             operational_insights=review.operational_insights,
             visit_context=review.visit_context,
             key_phrases=review.key_phrases,
-            anomaly_flags=review.anomaly_flags
+            anomaly_flags=review.anomaly_flags,
+            restaurant_id=review.restaurant_id,
+            restaurant_name=review.restaurant_name
         )
         
         # Update with new extraction data

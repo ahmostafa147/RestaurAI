@@ -69,7 +69,7 @@ class ClaudeWrapper:
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=4000,
+                max_tokens=20000,
                 temperature=0.1,  # Low temperature for consistent extraction
                 messages=[{
                     "role": "user",
@@ -157,9 +157,9 @@ Extract the following information and return ONLY valid JSON matching this exact
         "party_type": "solo/couple/family/business/friends/large_group",
         "occasion": "regular/date/business/celebration/tourist",
         "time_of_visit": "breakfast/lunch/dinner/late_night/unknown",
-        "first_visit": true/false/unknown,
-        "would_return": true/false/unknown,
-        "would_recommend": true/false/unknown
+        "first_visit": true/false/null,
+        "would_return": true/false/null,
+        "would_recommend": true/false/null
     }},
     "key_phrases": {{
         "positive_highlights": ["extracting 2-3 quotable phrases"],
@@ -213,11 +213,11 @@ IMPORTANT:
             
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {str(e)}")
-            logger.error(f"Response content: {response.content[:200]}...")
+            logger.error(f"Response content: {response.content}...")
             return None
         except Exception as e:
             logger.error(f"Failed to validate response with Pydantic: {str(e)}")
-            logger.error(f"Response content: {response.content[:200]}...")
+            logger.error(f"Response content: {response.content}...")
             return None
     
     def get_usage_stats(self, responses: List[LLMResponse]) -> Dict[str, int]:

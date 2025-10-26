@@ -11,29 +11,29 @@ class RatingBreakdown(BaseModel):
 class MentionedItem(BaseModel):
     """Mentioned menu item with details"""
     name: str
-    sentiment: str = Field(..., pattern="^(positive|negative|mixed)$")
+    sentiment: str = Field("unknown", pattern="^(positive|negative|mixed)$")
     aspects: List[str] = Field(default_factory=list)
 
 class StaffMention(BaseModel):
     """Staff member mention"""
-    role: str = Field(..., pattern="^(server|host|manager|bartender|chef)$")
+    role: str = Field("unknown", pattern="^(server|host|manager|bartender|chef)$")
     name: Optional[str] = None
-    sentiment: str = Field(..., pattern="^(positive|negative)$")
+    sentiment: str = Field("unknown", pattern="^(positive|negative)$")
     specific_feedback: Optional[str] = None
 
 class OperationalInsights(BaseModel):
     """Operational insights from review"""
-    wait_time: str = Field(..., pattern="^(none|short|reasonable|long|excessive|not_mentioned)$")
-    reservation_experience: str = Field(..., pattern="^(positive|negative|not_mentioned)$")
-    cleanliness: str = Field(..., pattern="^(positive|negative|not_mentioned)$")
-    noise_level: str = Field(..., pattern="^(quiet|moderate|loud|not_mentioned)$")
-    crowding: str = Field(..., pattern="^(empty|comfortable|busy|overcrowded|not_mentioned)$")
+    wait_time: str = Field("unknown", pattern="^(none|short|reasonable|long|excessive|not_mentioned)$")
+    reservation_experience: str = Field("unknown", pattern="^(positive|negative|not_mentioned)$")
+    cleanliness: str = Field("unknown", pattern="^(positive|negative|not_mentioned)$")
+    noise_level: str = Field("unknown", pattern="^(quiet|moderate|loud|not_mentioned)$")
+    crowding: str = Field("unknown", pattern="^(empty|comfortable|busy|overcrowded|not_mentioned)$")
 
 class VisitContext(BaseModel):
     """Visit context information"""
-    party_type: str = Field(..., pattern="^(solo|couple|family|business|friends|large_group|unknown)$")
-    occasion: str = Field(..., pattern="^(regular|date|business|celebration|tourist|unknown)$")
-    time_of_visit: str = Field(..., pattern="^(breakfast|lunch|dinner|late_night|unknown)$")
+    party_type: Optional[str] = Field("unknown", pattern="^(solo|couple|family|business|friends|large_group|unknown)$")
+    occasion: Optional[str] = Field("unknown", pattern="^(regular|date|business|celebration|tourist|unknown)$")
+    time_of_visit: Optional[str] = Field("unknown", pattern="^(breakfast|lunch|dinner|late_night|unknown)$")
     first_visit: Optional[bool] = None
     would_return: Optional[bool] = None
     would_recommend: Optional[bool] = None
@@ -53,7 +53,7 @@ class AnomalyFlags(BaseModel):
 
 class ReviewExtraction(BaseModel):
     """Complete review extraction schema"""
-    overall_sentiment: str = Field(..., pattern="^(positive|negative|mixed|neutral)$")
+    overall_sentiment: str = Field("unknown", pattern="^(positive|negative|mixed|neutral)$")
     rating_breakdown: Optional[RatingBreakdown] = None
     mentioned_items: List[MentionedItem] = Field(default_factory=list)
     staff_mentions: List[StaffMention] = Field(default_factory=list)

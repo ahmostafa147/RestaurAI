@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "restaurant": {
-      "command": "python",
-      "args": ["-m", "src.mcp.server"],
-      "cwd": "/Users/ahmostafa/Desktop/RestaurAI"
-    }
-  }
-}
