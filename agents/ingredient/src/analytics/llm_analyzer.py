@@ -31,13 +31,14 @@ class LLMAnalyzer:
         Args:
             anthropic_api_key: Anthropic API key. If None, will try to load from .env
         """
-        # Load environment variables
+        # Load environment variables from .env file if it exists
         env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..','..', '.env')
-        load_dotenv(env_path)
-        
-        # Get API key
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+
+        # Get API key from OS environment or parameter
         api_key = anthropic_api_key or os.getenv('ANTHROPIC_API_KEY')
-        model = os.getenv('CLAUDE_MODEL')
+        model = os.getenv('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022')  # Default to Claude 3.5 Sonnet
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY not provided and not found in environment variables")
         

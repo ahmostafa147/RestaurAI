@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Calendar, Phone } from 'lucide-react';
-import { api } from '../services/api';
 import { AgentCard } from './AgentCard';
 
 export function ReservationToggle() {
@@ -11,7 +10,7 @@ export function ReservationToggle() {
     setIsLoading(true);
     try {
       const newState = !enabled;
-      await api.toggleReservations(newState);
+      // TODO: Implement toggleReservations in API
       setEnabled(newState);
     } catch (error) {
       console.error('Failed to toggle reservations:', error);

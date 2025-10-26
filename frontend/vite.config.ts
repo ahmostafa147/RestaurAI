@@ -6,9 +6,26 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/api/sse': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        ws: true, // Enable WebSocket/SSE support
+      },
+      '/api/messages': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // SDK sends messages to /messages directly (without /api prefix)
+      '/messages': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://localhost:8001',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ingredient-api': {
         target: 'http://localhost:8004',

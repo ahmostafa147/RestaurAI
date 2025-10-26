@@ -1,4 +1,4 @@
-import { X, Star, TrendingUp, Users, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { X, Star, TrendingUp, Users, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface ReviewAnalytics {

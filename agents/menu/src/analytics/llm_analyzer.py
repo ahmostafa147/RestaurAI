@@ -35,7 +35,7 @@ class LLMAnalyzer:
         
         # Get API key from parameter or environment
         resolved_api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
-        model = os.getenv('CLAUDE_MODEL')
+        model = os.getenv('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022')  # Default to Claude 3.5 Sonnet
         if not resolved_api_key:
             raise ValueError(
                 "Anthropic API key is required. Please set ANTHROPIC_API_KEY environment variable "
