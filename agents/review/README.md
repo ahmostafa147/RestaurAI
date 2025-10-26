@@ -1,3 +1,6 @@
+![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D8BD3)
+![tag:hackathon](https://img.shields.io/badge/hackathon-5F43F1)
+
 # Restaurant Review Collection System
 
 A comprehensive Python system for cataloging restaurant reviews from Google Places and Yelp APIs with advanced data management, deduplication, and storage capabilities.
