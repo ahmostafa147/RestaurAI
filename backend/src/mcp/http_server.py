@@ -64,7 +64,7 @@ def get_menu(key: str) -> str:
         r = Restaurant(key=key)
         print("get_menu in use")
         
-        return json.dumps(r.get_menu(), indent=2)
+        return json.dumps(r.get_menu_dict(), indent=2)
     except Exception as e:
         return json.dumps({"error": str(e)})
 
