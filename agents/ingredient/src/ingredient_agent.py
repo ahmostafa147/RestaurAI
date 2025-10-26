@@ -4,6 +4,7 @@ Main orchestrator for ingredient agent analytics
 
 import sys
 import os
+import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
@@ -29,7 +30,59 @@ class IngredientAgent:
         self.consumption_analyzer = ConsumptionAnalyzer()
         self.llm_analyzer = LLMAnalyzer(anthropic_api_key)
         self.report_generator = ReportGenerator()
+        self.restaurants = self._load_restaurants()
     
+    def _load_restaurants(self) -> List[Dict[str, Any]]:
+        """Load restaurant configurations from unified restaurants.json"""
+        restaurants_file = os.path.join(os.path.dirname(__file__), '..', '..', 'restaurants.json')
+        if os.path.exists(restaurants_file):
+            with open(restaurants_file, 'r') as f:
+                config = json.load(f)
+                return config.get('restaurants', [])
+        return []
+    
+    def load_report(self, secure_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Load a report for a restaurant by secure_key.
+        If no report exists, generates a new one.
+        
+        Args:
+            secure_key: Restaurant secure key
+            
+        Returns:
+            Report dictionary or None if generation fails
+        """
+        # Look for existing report files in data directory
+        data_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data')
+        
+        # Try to find the most recent report for this restaurant
+        # Reports are saved with pattern: {secure_key}_{timestamp}.json
+        report_files = []
+        if os.path.exists(data_dir):
+            for filename in os.listdir(data_dir):
+                if filename.startswith(secure_key) and filename.endswith('.json'):
+                    file_path = os.path.join(data_dir, filename)
+                    try:
+                        stat = os.stat(file_path)
+                        report_files.append({
+                            'path': file_path,
+                            'time': stat.st_mtime
+                        })
+                    except:
+                        continue
+        
+        # If we found existing reports, return the most recent one
+        if report_files:
+            latest = max(report_files, key=lambda x: x['time'])
+            try:
+                with open(latest['path'], 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Error loading report from {latest['path']}: {e}")
+        
+        # If no report found, generate a new one
+        print(f"No existing report found for {secure_key}, generating new report...")
+        return self.generate_inventory_report(secure_key)
     def generate_inventory_report(self, restaurant_key: str, 
                                 output_path: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -63,6 +116,44 @@ class IngredientAgent:
                     'error': True
                 }
             }
+    
+    def generate_multi_restaurant_report(self, output_path: Optional[str] = None) -> Dict[str, Any]:
+        """Generate analytics report for all configured restaurants"""
+        restaurants_report = {}
+        
+        for restaurant in self.restaurants:
+            restaurant_id = restaurant['id']
+            restaurant_name = restaurant['name']
+            secure_key = restaurant['secure_key']
+            
+            try:
+                # Generate analytics for this restaurant
+                analytics = self.generate_inventory_report(secure_key)
+                
+                restaurants_report[restaurant_id] = {
+                    "id": restaurant_id,
+                    "name": restaurant_name,
+                    "analytics": analytics
+                }
+            except Exception as e:
+                restaurants_report[restaurant_id] = {
+                    "id": restaurant_id,
+                    "name": restaurant_name,
+                    "error": f"Failed to generate analytics: {str(e)}"
+                }
+        
+        # Save multi-restaurant report if output path provided
+        if output_path:
+            with open(output_path, 'w') as f:
+                json.dump({
+                    "generated_at": datetime.now().isoformat(),
+                    "restaurants": restaurants_report
+                }, f, indent=2)
+        
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "restaurants": restaurants_report
+        }
     
     def get_low_stock_alerts(self, restaurant_key: str) -> List[Dict[str, Any]]:
         """

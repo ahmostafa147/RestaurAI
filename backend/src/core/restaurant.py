@@ -14,7 +14,14 @@ class Restaurant:
         if key:
             self.key = key
             restaurant_data = db.get_restaurant(key)
-            self.name = restaurant_data["name"]
+            if restaurant_data:
+                self.name = restaurant_data["name"]
+            else:
+                # Restaurant doesn't exist, create it with the given key
+                if not name:
+                    raise ValueError("Restaurant name is required when creating with a specific key")
+                db.create_restaurant_with_key(name, key)
+                self.name = name
         else:
             self.name = name
             self.key = db.create_restaurant(name)

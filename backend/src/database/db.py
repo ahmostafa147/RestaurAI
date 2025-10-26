@@ -18,6 +18,15 @@ def create_restaurant(name: str) -> str:
     )
     return key
 
+def create_restaurant_with_key(name: str, key: str) -> str:
+    """Create a restaurant with a specific key"""
+    collection.add(
+        ids=[f"{key}_restaurant"],
+        documents=[json.dumps({"name": name, "tables": 10})],
+        metadatas=[{"type": "restaurant", "key": key, "name": name, "timestamp": datetime.now().isoformat()}]
+    )
+    return key
+
 def log_event(key: str, event_type: str, data: dict):
     event_id = str(uuid.uuid4())
     collection.add(
