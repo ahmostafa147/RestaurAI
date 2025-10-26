@@ -30,6 +30,7 @@ from pydantic import BaseModel
 from main import RestaurantReviewAgent
 from scrapers.pull_dataset import Status
 from analytics.analytics_engine import AnalyticsEngine
+from eval.llm_wrapper import ClaudeWrapper
 
 
 # Set up logging
@@ -104,35 +105,139 @@ async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
         
         ctx.logger.info("Processing user message...")
         
-        # Step 3: Extract restaurant_id from message content
+        # Step 3: Extract restaurant_id and user question from message content
         restaurant_id = None
+        user_question = None
+        full_message_text = ""
+        
         if hasattr(msg, 'content') and msg.content:
             for content in msg.content:
                 if hasattr(content, 'text'):
-                    # Try to parse restaurant_id from message text
-                    # Look for patterns like "restaurant_id: causwells-sf" or just "causwells-sf"
-                    text = content.text.strip()
-                    if 'restaurant_id:' in text:
-                        restaurant_id = text.split('restaurant_id:')[1].strip()
-                    elif text and not text.startswith('{') and not text.startswith('['):
-                        # Assume the entire message is the restaurant_id if it's not JSON
-                        restaurant_id = text
+                    full_message_text = content.text.strip()
+                    user_question = full_message_text
         
-        if not restaurant_id:
-            response = "Error: restaurant_id is required. Please provide a restaurant ID in your message."
-            ctx.logger.warning("No restaurant_id provided in message")
-        else:
-            # Step 4: Generate analytics for specific restaurant
+        # If no question provided but restaurant_id exists, set a default question
+        if not user_question:
+            user_question = "Please provide a summary of this restaurant's analytics based on the reviews."
+        
+        # If no explicit restaurant_id found, use Claude to try to identify it from the message
+        if not restaurant_id and full_message_text:
             try:
-                from analytics.analytics_engine import AnalyticsEngine
-                engine = AnalyticsEngine(restaurant_agent.database_handler)
-                report = engine.generate_full_report(restaurant_id=restaurant_id)
-                response = json.dumps(report, indent=2)
-                ctx.logger.info(f"Analytics report generated for restaurant: {restaurant_id}")
+                claude_wrapper = ClaudeWrapper()
+                
+                # Load available restaurant IDs
+                analytics_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'analytics_report.json')
+                with open(analytics_path, "r", encoding="utf-8") as f:
+                    analytics_data = json.load(f)
+                
+                available_restaurant_ids = list(analytics_data.get("restaurants", {}).keys())
+                restaurant_names = {rid: analytics_data["restaurants"][rid].get("name", rid) for rid in available_restaurant_ids}
+                
+                # Create prompt for Claude to identify restaurant
+                restaurant_identification_prompt = f"""Given the following user message, identify if it mentions a restaurant from the available list. Return ONLY the restaurant_id if found, or "NOT_FOUND" if not found.
+
+Available restaurants:
+{json.dumps(restaurant_names, indent=2)}
+
+User message: {full_message_text}
+
+Return format (one of):
+- "restaurant_id: <exact_restaurant_id>" if you can confidently identify the restaurant
+- "NOT_FOUND" if you cannot confidently identify any restaurant
+
+Examples:
+- "What do customers think about Cote Ouest?" → "restaurant_id: cote-ouest-bistro-sf"
+- "Tell me about Causwells reviews" → "restaurant_id: causwells-sf"
+- "What's the weather like?" → "NOT_FOUND"
+- "Show me analytics for the French bistro" → "restaurant_id: cote-ouest-bistro-sf"
+"""
+
+                # Ask Claude to identify the restaurant
+                identification_response = claude_wrapper.client.messages.create(
+                    model=claude_wrapper.model,
+                    max_tokens=200,
+                    temperature=0.1,  # Low temperature for deterministic extraction
+                    messages=[{
+                        "role": "user",
+                        "content": restaurant_identification_prompt
+                    }]
+                )
+                
+                identification_result = identification_response.content[0].text.strip()
+                
+                # Parse the result
+                if identification_result.startswith("restaurant_id:"):
+                    restaurant_id = identification_result.split("restaurant_id:")[1].strip()
+                    ctx.logger.info(f"Claude identified restaurant_id: {restaurant_id}")
+                    # Set default question if no explicit question was found
+                    if not user_question:
+                        user_question = full_message_text
+                else:
+                    response = "Error: No restaurant could be identified from your message. Please specify a restaurant name or ID."
+                    ctx.logger.warning("Could not identify restaurant from message")
+                    restaurant_id = None  # Ensure it's None so we skip the analytics section
                 
             except Exception as e:
-                response = f"Error generating analytics for restaurant {restaurant_id}: {str(e)}"
-                ctx.logger.error(f"Error generating analytics for restaurant {restaurant_id}: {e}")
+                response = f"Error identifying restaurant: {str(e)}"
+                ctx.logger.error(f"Error identifying restaurant: {e}")
+                restaurant_id = None
+        
+        if not restaurant_id:
+            if 'response' not in locals():
+                response = "Error: restaurant_id is required. Please provide a restaurant ID in your message."
+            ctx.logger.warning("No restaurant_id available")
+        else:
+            # Step 4: Generate analytics for specific restaurant and answer with Claude
+            try:
+                # Generate restaurant-specific analytics
+                # Use pre-generated analytics report from analytics_report.json
+
+                analytics_path = os.path.join(os.path.dirname(__file__),'..', '..', 'data', 'analytics_report.json')
+                try:
+                    with open(analytics_path, "r", encoding="utf-8") as f:
+                        analytics_data = json.load(f)
+                except FileNotFoundError:
+                    ctx.logger.error("analytics_report.json not found.")
+                    raise
+
+                restaurants = analytics_data.get("restaurants", {})
+                restaurant_analytics = restaurants.get(restaurant_id, {})
+                if not restaurant_analytics:
+                    raise ValueError(f"No analytics data found for restaurant_id: {restaurant_id}")
+
+                report = restaurant_analytics.get("analytics", {})
+                ctx.logger.info(f"Loaded analytics report from analytics_report.json for restaurant: {restaurant_id}")
+
+                # Use Claude API to answer user's question with analytics context
+                claude_wrapper = ClaudeWrapper()
+                
+                # Create prompt with analytics context
+                prompt = f"""You are a restaurant analytics assistant. Analyze the following restaurant review analytics and answer the user's question.
+
+Restaurant Analytics Data (JSON):
+{json.dumps(report, indent=2)}
+
+User Question: {user_question}
+
+Please provide a clear, helpful answer based on the analytics data above. Be specific and reference specific metrics when relevant."""
+
+                # Get response from Claude
+                claude_response = claude_wrapper.client.messages.create(
+                    model=claude_wrapper.model,
+                    max_tokens=4000,
+                    temperature=0.7,
+                    messages=[{
+                        "role": "user",
+                        "content": prompt
+                    }]
+                )
+                
+                response = claude_response.content[0].text
+                ctx.logger.info(f"Claude API response generated successfully for restaurant: {restaurant_id}")
+                
+            except Exception as e:
+                response = f"Error processing request for restaurant {restaurant_id}: {str(e)}"
+                ctx.logger.error(f"Error processing request for restaurant {restaurant_id}: {e}")
         
         # Step 5: Send response
         await ctx.send(sender, ChatMessage(
@@ -175,7 +280,7 @@ async def daily_review_refresh(ctx: Context):
         
         # Pull new reviews
         ctx.logger.info("Pulling new reviews...")
-        # restaurant_agent.pull_reviews() #TODO: UNCOMMENT
+        #restaurant_agent.pull_reviews() #TODO: UNCOMMENT
         ctx.logger.info("Reviews pulled, checking status...")
         
         # Check snapshot status every 30 seconds until all are READY
@@ -192,8 +297,8 @@ async def daily_review_refresh(ctx: Context):
             # Refresh snapshots after update
             snapshots = restaurant_agent.database_handler.get_all_snapshots()
             
-            ctx.logger.info("Waiting 30 seconds before next status check...")
-            await asyncio.sleep(30)
+            ctx.logger.info("Waiting 120 seconds before next status check...")
+            await asyncio.sleep(120)
         
         ctx.logger.info("All snapshots are ready, proceeding with LLM processing...")
         
