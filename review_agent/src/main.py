@@ -5,7 +5,8 @@ Simple initialization of scraper interface and database functionality
 
 import sys
 import os
-from typing import Optional, Dict, Any
+import json
+from typing import Optional, Dict, Any, List
 
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -20,16 +21,49 @@ class RestaurantReviewAgent:
     def __init__(self, database_path: str):
         self.scraper_interface = ScraperInterface()
         self.database_handler = DatabaseHandler(database_path)
+        self.restaurants = self._load_restaurants()
+    
+    def _load_restaurants(self) -> List[Dict[str, Any]]:
+        """Load restaurant configurations from restaurants.json"""
+        restaurants_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'restaurants.json')
+        if os.path.exists(restaurants_file):
+            with open(restaurants_file, 'r') as f:
+                config = json.load(f)
+                return config.get('restaurants', [])
+        return []
     def pull_reviews(self):
-        google_snapshot = self.scraper_interface.scrape_google_reviews()
-        yelp_snapshot = self.scraper_interface.scrape_yelp_reviews(
-            unrecommended_reviews=True,
-            start_date="2025-03-02T00:00:00.000Z",
-            end_date="2025-06-01T00:00:00.000Z",
-            sort_by="DATE_DESC"
-        )
-        self.database_handler.save_snapshot(google_snapshot)
-        self.database_handler.save_snapshot(yelp_snapshot)
+        """Pull reviews for all configured restaurants"""
+        if not self.restaurants:
+            # Fallback to default scraping for backward compatibility
+            google_snapshot = self.scraper_interface.scrape_google_reviews()
+            yelp_snapshot = self.scraper_interface.scrape_yelp_reviews(
+                unrecommended_reviews=True,
+                start_date="2025-03-02T00:00:00.000Z",
+                end_date="2025-06-01T00:00:00.000Z",
+                sort_by="DATE_DESC"
+            )
+            self.database_handler.save_snapshot(google_snapshot)
+            self.database_handler.save_snapshot(yelp_snapshot)
+        else:
+            # Scrape reviews for each configured restaurant
+            for restaurant in self.restaurants:
+                restaurant_id = restaurant['id']
+                restaurant_name = restaurant['name']
+                
+                google_snapshot = self.scraper_interface.scrape_google_reviews(
+                    google_url=restaurant['google_url'],
+                    restaurant_id=restaurant_id
+                )
+                yelp_snapshot = self.scraper_interface.scrape_yelp_reviews(
+                    unrecommended_reviews=True,
+                    start_date="2025-03-02T00:00:00.000Z",
+                    end_date="2025-06-01T00:00:00.000Z",
+                    sort_by="DATE_DESC",
+                    yelp_url=restaurant['yelp_url'],
+                    restaurant_id=restaurant_id
+                )
+                self.database_handler.save_snapshot(google_snapshot)
+                self.database_handler.save_snapshot(yelp_snapshot)
     def update_pull_status(self):
         """Update the status of all currently saved snapshots"""
         for snapshot in self.database_handler.get_all_snapshots():
@@ -43,7 +77,28 @@ class RestaurantReviewAgent:
                 if not reviews:
                     raise Exception(f"Snapshot {snapshot.snapshot_id}Status is ready, but cannot be pulled")
                 print(f"Pulled {len(reviews)} reviews from snapshot {snapshot.snapshot_id}")
-                self.database_handler.save_reviews([Review.from_api_response(review, snapshot.source) for review in reviews])
+                
+                # Get restaurant info from snapshot if available
+                restaurant_id = getattr(snapshot, 'restaurant_id', None)
+                restaurant_name = None
+                if restaurant_id:
+                    # Find restaurant name from loaded restaurants
+                    for restaurant in self.restaurants:
+                        if restaurant['id'] == restaurant_id:
+                            restaurant_name = restaurant['name']
+                            break
+                
+                # Create reviews with restaurant info
+                review_objects = [
+                    Review.from_api_response(
+                        review, 
+                        snapshot.source, 
+                        restaurant_id=restaurant_id,
+                        restaurant_name=restaurant_name
+                    ) 
+                    for review in reviews
+                ]
+                self.database_handler.save_reviews(review_objects)
     
     def process_reviews_with_llm(self, claude_api_key: Optional[str] = None):
         """Process unanalyzed reviews with LLM extraction"""
@@ -73,10 +128,13 @@ class RestaurantReviewAgent:
         from analytics.analytics_engine import AnalyticsEngine
         
         engine = AnalyticsEngine(self.database_handler)
-        report = engine.generate_full_report()
+        
+        # Use multi-restaurant report by default
+        report = engine.generate_multi_restaurant_report()
         
         if output_path:
-            engine.export_report(output_path)
+            # Export multi-restaurant report
+            engine.export_report(output_path, multi_restaurant=True)
             print(f"Analytics report exported to {output_path}")
         
         return report

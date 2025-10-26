@@ -28,8 +28,8 @@ latest_report = None
 
 # Create uAgents agent
 agent = Agent(
-    name="ingredient_agent",
-    seed="ingredient-agent-seed-12345",
+    name="ingredient_agent_v2",
+    seed="ingredient-agent-seed-12345-v2",
     port=8005,
     endpoint=["http://localhost:8004/submit"]
 )

@@ -32,28 +32,76 @@ class AnalyticsEngine:
         self.reviews = self.db.get_all_reviews()
         self.processed_reviews = [r for r in self.reviews if r.llm_processed]
     
-    def generate_full_report(self) -> Dict[str, Any]:
-        """Generate comprehensive analytics report"""
+    def generate_full_report(self, restaurant_id: str = None) -> Dict[str, Any]:
+        """Generate comprehensive analytics report for a specific restaurant or all restaurants"""
+        
+        # Filter reviews by restaurant if specified
+        reviews_to_analyze = self.reviews
+        processed_reviews_to_analyze = self.processed_reviews
+        
+        if restaurant_id:
+            reviews_to_analyze = self.db.get_reviews_by_restaurant(restaurant_id)
+            processed_reviews_to_analyze = [r for r in reviews_to_analyze if r.llm_processed]
         
         return {
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
-                "total_reviews": len(self.reviews),
-                "processed_reviews": len(self.processed_reviews),
-                "processing_coverage": round(len(self.processed_reviews) / len(self.reviews) * 100, 1) if self.reviews else 0
+                "total_reviews": len(reviews_to_analyze),
+                "processed_reviews": len(processed_reviews_to_analyze),
+                "processing_coverage": round(len(processed_reviews_to_analyze) / len(reviews_to_analyze) * 100, 1) if reviews_to_analyze else 0
             },
-            "basic_metrics": BasicMetricsCalculator(self.reviews).calculate_all(),
-            "menu_analytics": MenuAnalyticsCalculator(self.reviews).calculate_all(),
-            "staff_analytics": StaffAnalyticsCalculator(self.reviews).calculate_all(),
-            "temporal_analysis": TemporalAnalysisCalculator(self.reviews).calculate_all(),
-            "operational_metrics": OperationalMetricsCalculator(self.reviews).calculate_all(),
-            "customer_insights": CustomerInsightsCalculator(self.reviews).calculate_all(),
-            "reputation_insights": self.calculate_reputation_insights(),
+            "basic_metrics": BasicMetricsCalculator(reviews_to_analyze).calculate_all(),
+            "menu_analytics": MenuAnalyticsCalculator(reviews_to_analyze).calculate_all(),
+            "staff_analytics": StaffAnalyticsCalculator(reviews_to_analyze).calculate_all(),
+            "temporal_analysis": TemporalAnalysisCalculator(reviews_to_analyze).calculate_all(),
+            "operational_metrics": OperationalMetricsCalculator(reviews_to_analyze).calculate_all(),
+            "customer_insights": CustomerInsightsCalculator(reviews_to_analyze).calculate_all(),
+            "reputation_insights": self._calculate_reputation_insights_for_reviews(processed_reviews_to_analyze),
         }
     
-    def calculate_reputation_insights(self) -> Dict[str, Any]:
-        """Calculate reputation and anomaly insights"""
-        if not self.processed_reviews:
+    def generate_multi_restaurant_report(self) -> Dict[str, Any]:
+        """Generate analytics report for all restaurants"""
+        
+        # Get unique restaurant IDs from reviews
+        restaurant_ids = set()
+        restaurant_names = {}
+        for review in self.reviews:
+            if hasattr(review, 'restaurant_id') and review.restaurant_id:
+                restaurant_ids.add(review.restaurant_id)
+                if hasattr(review, 'restaurant_name') and review.restaurant_name:
+                    restaurant_names[review.restaurant_id] = review.restaurant_name
+        
+        # If no restaurant IDs found, return a report for all reviews
+        if not restaurant_ids:
+            return {
+                "generated_at": datetime.now().isoformat(),
+                "restaurants": {
+                    "default": {
+                        "id": "default",
+                        "name": "Default",
+                        "analytics": self.generate_full_report()
+                    }
+                }
+            }
+        
+        # Generate report for each restaurant
+        restaurants_report = {}
+        for restaurant_id in restaurant_ids:
+            analytics = self.generate_full_report(restaurant_id=restaurant_id)
+            restaurants_report[restaurant_id] = {
+                "id": restaurant_id,
+                "name": restaurant_names.get(restaurant_id, restaurant_id),
+                "analytics": analytics
+            }
+        
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "restaurants": restaurants_report
+        }
+    
+    def _calculate_reputation_insights_for_reviews(self, processed_reviews) -> Dict[str, Any]:
+        """Calculate reputation insights for a specific set of reviews"""
+        if not processed_reviews:
             return {"analysis": "no_processed_reviews"}
         
         # Analyze anomaly flags
@@ -68,7 +116,7 @@ class AnalyticsEngine:
         key_phrases_positive = []
         key_phrases_negative = []
         
-        for review in self.processed_reviews:
+        for review in processed_reviews:
             # Count anomaly flags
             if review.anomaly_flags:
                 try:
@@ -93,7 +141,7 @@ class AnalyticsEngine:
                     pass
         
         # Calculate anomaly percentages
-        total_processed = len(self.processed_reviews)
+        total_processed = len(processed_reviews)
         anomaly_percentages = {
             flag: round(count / total_processed * 100, 1)
             for flag, count in anomaly_data.items()
@@ -113,9 +161,12 @@ class AnalyticsEngine:
             "total_negative_phrases": len(key_phrases_negative)
         }
     
-    def export_report(self, output_path: str, format: str = "json"):
+    def export_report(self, output_path: str, format: str = "json", multi_restaurant: bool = True):
         """Export report to file"""
-        report = self.generate_full_report()
+        if multi_restaurant:
+            report = self.generate_multi_restaurant_report()
+        else:
+            report = self.generate_full_report()
         
         if format == "json":
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -123,9 +174,9 @@ class AnalyticsEngine:
         else:
             raise ValueError(f"Unsupported export format: {format}")
     
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self, restaurant_id: str = None) -> Dict[str, Any]:
         """Get a summary of key metrics"""
-        report = self.generate_full_report()
+        report = self.generate_full_report(restaurant_id=restaurant_id)
         
         basic_metrics = report.get('basic_metrics', {})
         overall_perf = basic_metrics.get('overall_performance', {})

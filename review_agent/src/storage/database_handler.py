@@ -141,3 +141,13 @@ class DatabaseHandler:
         all_reviews = self.get_all_reviews()
         return [r for r in all_reviews if not getattr(r, 'llm_processed', False)]
     
+    def get_reviews_by_restaurant(self, restaurant_id: str) -> List[Review]:
+        """Get all reviews for a specific restaurant"""
+        all_reviews = self.get_all_reviews()
+        return [r for r in all_reviews if getattr(r, 'restaurant_id', None) == restaurant_id]
+    
+    def get_snapshots_by_restaurant(self, restaurant_id: str) -> List[Snapshot]:
+        """Get all snapshots for a specific restaurant"""
+        all_snapshots = self.get_all_snapshots()
+        return [s for s in all_snapshots if getattr(s, 'restaurant_id', None) == restaurant_id]
+    
