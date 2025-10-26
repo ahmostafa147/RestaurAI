@@ -65,12 +65,20 @@ class RestaurantAPI {
   }
 
   async getMenuMetrics(): Promise<MenuMetrics> {
-    // TODO: Connect to menu agent
-    return {
-      activeItems: 34,
-      specialsToday: 3,
-      lowPerformers: 4
-    };
+    try {
+      const res = await fetch('/menu-api/metrics');
+      const data = await res.json();
+      const metrics = JSON.parse(data.response);
+
+      return {
+        activeItems: metrics.activeItems || 0,
+        specialsToday: metrics.topPerformers?.length || 0,
+        lowPerformers: metrics.lowPerformers?.length || 0
+      };
+    } catch (error) {
+      console.error('Failed to fetch menu metrics:', error);
+      return { activeItems: 0, specialsToday: 0, lowPerformers: 0 };
+    }
   }
 
   async getOrderMetrics(): Promise<OrderMetrics> {
