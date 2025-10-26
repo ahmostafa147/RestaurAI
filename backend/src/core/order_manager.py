@@ -292,10 +292,13 @@ class OrderManager:
     
     def add_menu_item(self, item: MenuItem) -> bool:
         """Add a new menu item to the appropriate category"""
-        if item.category in self.menu:
-            self.menu[item.category].append(item)
-            return True
-        return False
+        # Create category if it doesn't exist
+        if item.category not in self.menu:
+            self.menu[item.category] = []
+        
+        self.menu[item.category].append(item)
+        self._save_menu()  # Save the updated menu to database
+        return True
     
     def update_menu_item(self, item_id: int, **kwargs) -> bool:
         """Update a menu item's properties"""

@@ -29,14 +29,13 @@ class LLMAnalyzer:
     def __init__(self, api_key: Optional[str] = None):
         """Initialize with Anthropic API key"""
         # Load .env file from project root (3 levels up from this file)
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        env_path = os.path.join(project_root, '.env')
+        env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..','..', '.env')
         if os.path.exists(env_path):
             load_dotenv(env_path)
         
         # Get API key from parameter or environment
         resolved_api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
-        
+        model = os.getenv('CLAUDE_MODEL')
         if not resolved_api_key:
             raise ValueError(
                 "Anthropic API key is required. Please set ANTHROPIC_API_KEY environment variable "
@@ -44,11 +43,19 @@ class LLMAnalyzer:
             )
         
         self.llm = ChatAnthropic(
-            model="claude-3-haiku-20240307",
+            model=model,
             api_key=resolved_api_key,
             max_tokens=4000
         )
         self.parser = PydanticOutputParser(pydantic_object=LLMInsights)
+        
+        # Add direct Anthropic client for server compatibility
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=resolved_api_key)
+            self.model = model
+        except ImportError:
+            raise ImportError("Missing anthropic dependency. Please install anthropic package.")
     
     
     

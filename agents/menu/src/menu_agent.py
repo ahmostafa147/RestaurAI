@@ -23,11 +23,21 @@ class MenuAgent:
         self.menu_analyzer = MenuAnalyzer()
         self.llm_analyzer = LLMAnalyzer(anthropic_api_key)
         self.report_generator = ReportGenerator()
+        self.restaurants = self._load_restaurants()
 
         # Create reports directory in project data folder
         project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..')
         self.reports_dir = os.path.join(project_root, 'data', 'menu_reports')
         os.makedirs(self.reports_dir, exist_ok=True)
+    
+    def _load_restaurants(self) -> List[Dict[str, Any]]:
+        """Load restaurant configurations from unified restaurants.json"""
+        restaurants_file = os.path.join(os.path.dirname(__file__), '..', '..', 'restaurants.json')
+        if os.path.exists(restaurants_file):
+            with open(restaurants_file, 'r') as f:
+                config = json.load(f)
+                return config.get('restaurants', [])
+        return []
     
     def generate_analytics_report(
         self, 
@@ -121,6 +131,44 @@ class MenuAgent:
                 }
             }
     
+    def generate_multi_restaurant_report(self, review_analytics_path: Optional[str] = None) -> Dict[str, Any]:
+        """Generate analytics report for all configured restaurants"""
+        restaurants_report = {}
+        
+        for restaurant in self.restaurants:
+            restaurant_id = restaurant['id']
+            restaurant_name = restaurant['name']
+            secure_key = restaurant['secure_key']
+            
+            try:
+                # Generate analytics for this restaurant
+                analytics = self.generate_analytics_report(secure_key, review_analytics_path)
+                
+                restaurants_report[restaurant_id] = {
+                    "id": restaurant_id,
+                    "name": restaurant_name,
+                    "analytics": analytics
+                }
+            except Exception as e:
+                restaurants_report[restaurant_id] = {
+                    "id": restaurant_id,
+                    "name": restaurant_name,
+                    "error": f"Failed to generate analytics: {str(e)}"
+                }
+        
+        # Save multi-restaurant report
+        multi_report_path = os.path.join(self.reports_dir, 'multi_restaurant_report.json')
+        with open(multi_report_path, 'w') as f:
+            json.dump({
+                "generated_at": datetime.now().isoformat(),
+                "restaurants": restaurants_report
+            }, f, indent=2)
+        
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "restaurants": restaurants_report
+        }
+    
     def _load_closed_tickets(self, restaurant_key: str) -> List[Dict]:
         """Load closed tickets from database"""
         try:
@@ -146,13 +194,62 @@ class MenuAgent:
                     })
         return sorted(reports, key=lambda x: x['created_at'], reverse=True)
     
-    def load_report(self, report_path: str) -> Dict[str, Any]:
-        """Load a specific report from file"""
+    def load_report(self, secure_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Load a report for a restaurant by secure_key.
+        If no report exists, generates a new one.
+        
+        Args:
+            secure_key: Restaurant secure key
+            
+        Returns:
+            Report dictionary or None if generation fails
+        """
+        # Look for existing report files in data directory
+        data_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data', 'menu_reports')
+        
+        # Try to find the most recent report for this restaurant
+        # Reports are saved with pattern: {secure_key}_{timestamp}.json
+        report_files = []
+        if os.path.exists(data_dir):
+            for filename in os.listdir(data_dir):
+                if filename.startswith(secure_key) and filename.endswith('.json'):
+                    file_path = os.path.join(data_dir, filename)
+                    try:
+                        stat = os.stat(file_path)
+                        report_files.append({
+                            'path': file_path,
+                            'time': stat.st_mtime
+                        })
+                    except:
+                        continue
+        
+        # Sort by modification time (most recent first)
+        report_files.sort(key=lambda x: x['time'], reverse=True)
+        
+        # Load the most recent report if found
+        if report_files:
+            try:
+                with open(report_files[0]['path'], 'r') as f:
+                    report = json.load(f)
+                    print(f"Loaded existing menu report for {secure_key}")
+                    return report
+            except Exception as e:
+                print(f"Error loading existing report: {e}")
+        
+        # If no existing report found, generate a new one
+        print(f"No existing menu report found for {secure_key}, generating new one...")
         try:
-            with open(report_path, 'r') as f:
-                return json.load(f)
+            report = self.generate_analytics_report(secure_key)
+            if 'error' not in report:
+                print(f"Generated new menu report for {secure_key}")
+                return report
+            else:
+                print(f"Failed to generate menu report: {report['error']}")
+                return None
         except Exception as e:
-            return {'error': f"Failed to load report: {str(e)}"}
+            print(f"Error generating menu report: {e}")
+            return None
     
     def get_report_summary(self, report: Dict[str, Any]) -> Dict[str, Any]:
         """Get a summary of the report"""
