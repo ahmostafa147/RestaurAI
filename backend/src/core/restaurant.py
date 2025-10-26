@@ -8,6 +8,7 @@ from ..models.ingredient import Ingredient
 from .ingredient_manager import IngredientManager
 from .table_manager import TableManager
 from .order_manager import OrderManager
+from .staff_manager import StaffManager
 
 class Restaurant:
     def __init__(self, name: str = None, key: str = None, menu: Dict[str, List[MenuItem]] = None, tables: List[Table] = None, inventory: Dict[int, Ingredient] = None):
@@ -32,6 +33,7 @@ class Restaurant:
             self.ingredient_manager.override_inventory(inventory)
         self.table_manager = TableManager(self.key, tables)
         self.order_manager = OrderManager(self.key, menu, self.ingredient_manager)
+        self.staff_manager = StaffManager(self.key)
     
 
     # Core restaurant operations
@@ -166,3 +168,65 @@ class Restaurant:
         """Get all reservations"""
         return self.table_manager.get_reservations()
     
+    # Staff management wrappers
+    def get_staff(self) -> List[Dict]:
+        """Get all staff members"""
+        return self.staff_manager.get_staff()
+    
+    def get_staff_member(self, staff_id: int) -> Optional[Dict]:
+        """Get a specific staff member by ID"""
+        member = self.staff_manager.get_staff_member(staff_id)
+        return member.to_dict() if member else None
+    
+    def get_staff_by_name(self, name: str) -> Optional[Dict]:
+        """Get a specific staff member by name"""
+        member = self.staff_manager.get_staff_by_name(name)
+        return member.to_dict() if member else None
+    
+    def get_staff_by_role(self, role: str) -> List[Dict]:
+        """Get all staff members with a specific role"""
+        members = self.staff_manager.get_staff_by_role(role)
+        return [member.to_dict() for member in members]
+    
+    def add_staff_member(self, staff_member: Dict) -> bool:
+        """Add a new staff member"""
+        from ..models.staff import StaffMember
+        member = StaffMember.from_dict(staff_member)
+        return self.staff_manager.add_staff_member(member)
+    
+    def remove_staff_member(self, staff_id: int) -> bool:
+        """Remove a staff member"""
+        return self.staff_manager.remove_staff_member(staff_id)
+    
+    def update_staff_member(self, staff_id: int, **kwargs) -> bool:
+        """Update a staff member's properties"""
+        return self.staff_manager.update_staff_member(staff_id, **kwargs)
+    
+    def get_available_staff(self, day_of_week: str, time: str = None) -> List[Dict]:
+        """Get staff members available on a specific day and optionally time"""
+        members = self.staff_manager.get_available_staff(day_of_week, time)
+        return [member.to_dict() for member in members]
+    
+    def mark_staff_absent(self, staff_id: int, absence_date: str = None) -> bool:
+        """Mark a staff member as absent on a specific date"""
+        return self.staff_manager.mark_absent(staff_id, absence_date)
+    
+    def clear_staff_absence(self, staff_id: int, absence_date: str = None) -> bool:
+        """Clear an absence for a staff member on a specific date"""
+        return self.staff_manager.clear_absence(staff_id, absence_date)
+    
+    def get_schedule_for_day(self, day_of_week: str) -> List[Dict]:
+        """Get schedule for a specific day of the week"""
+        return self.staff_manager.get_schedule_for_day(day_of_week)
+    
+    def get_schedule_for_week(self) -> Dict[str, List[Dict]]:
+        """Get schedule for the entire week"""
+        return self.staff_manager.get_schedule_for_week()
+    
+    def get_absences_for_date(self, target_date: str = None) -> List[Dict]:
+        """Get all absences for a specific date"""
+        return self.staff_manager.get_absences_for_date(target_date)
+    
+    def get_staff_utilization(self) -> Dict[str, any]:
+        """Get staff utilization metrics"""
+        return self.staff_manager.get_staff_utilization()

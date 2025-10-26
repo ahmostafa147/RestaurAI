@@ -133,13 +133,14 @@ async def handle_message(ctx: Context, sender: str, msg: ChatMessage):
             try:
                 claude_wrapper = ClaudeWrapper()
                 
-                # Load available restaurant IDs
-                analytics_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'analytics_report.json')
-                with open(analytics_path, "r", encoding="utf-8") as f:
-                    analytics_data = json.load(f)
+                # Load available restaurant IDs from restaurants.json
+                restaurants_file = os.path.join(os.path.dirname(__file__), '..', 'restaurants.json')
+                with open(restaurants_file, 'r') as f:
+                    config = json.load(f)
+                    restaurants = config.get('restaurants', [])
                 
-                available_restaurant_ids = list(analytics_data.get("restaurants", {}).keys())
-                restaurant_names = {rid: analytics_data["restaurants"][rid].get("name", rid) for rid in available_restaurant_ids}
+                restaurant_names = {r["id"]: r["name"] for r in restaurants}
+                available_restaurant_ids = [r["id"] for r in restaurants]
                 
                 # Create prompt for Claude to identify restaurant
                 restaurant_identification_prompt = f"""Given the following user message, identify if it mentions a restaurant from the available list. Return ONLY the restaurant_id if found, or "NOT_FOUND" if not found.
@@ -150,8 +151,8 @@ Available restaurants:
 User message: {full_message_text}
 
 Return format (one of):
-- "restaurant_id: <exact_restaurant_id>" if you can confidently identify the restaurant
-- "NOT_FOUND" if you cannot confidently identify any restaurant
+- "restaurant_id: <exact_restaurant_id>" if you can identify the restaurant
+- "NOT_FOUND" if you cannot identify an applicable restaurant
 
 Examples:
 - "What do customers think about Cote Ouest?" → "restaurant_id: cote-ouest-bistro-sf"
@@ -192,7 +193,16 @@ Examples:
         
         if not restaurant_id:
             if 'response' not in locals():
-                response = "Error: restaurant_id is required. Please provide a restaurant ID in your message."
+                # Load restaurant names for error message
+                try:
+                    restaurants_file = os.path.join(os.path.dirname(__file__), '..', 'restaurants.json')
+                    with open(restaurants_file, 'r') as f:
+                        config = json.load(f)
+                        restaurants = config.get('restaurants', [])
+                    restaurant_names = {r["id"]: r["name"] for r in restaurants}
+                    response = "Error: restaurant_id is required. Please provide a restaurant ID in your message. Available restaurants: " + json.dumps(restaurant_names, indent=2)
+                except Exception as e:
+                    response = "Error: restaurant_id is required. Please provide a restaurant ID in your message."
             ctx.logger.warning("No restaurant_id available")
         else:
             # Step 4: Generate analytics for specific restaurant and answer with Claude
