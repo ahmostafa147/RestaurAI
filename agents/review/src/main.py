@@ -25,7 +25,7 @@ class RestaurantReviewAgent:
     
     def _load_restaurants(self) -> List[Dict[str, Any]]:
         """Load restaurant configurations from restaurants.json"""
-        restaurants_file = os.path.join(os.path.dirname(os.path.dirname(__file__)),'..','..','data', 'restaurants.json')
+        restaurants_file = os.path.join(os.path.dirname(os.path.dirname(__file__)),'..','examples', 'restaurants.json')
         if os.path.exists(restaurants_file):
             with open(restaurants_file, 'r') as f:
                 config = json.load(f)
