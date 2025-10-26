@@ -71,13 +71,13 @@ class IngredientInsight(BaseModel):
 
 class LLMInsights(BaseModel):
     """Complete LLM analysis output"""
-    reorder_suggestions: List[ReorderSuggestion]
-    critical_items: List[int]  # Ingredient IDs that are most critical
-    optimization_tips: List[str]
-    seasonal_recommendations: List[str]
-    cost_optimization_suggestions: List[str]
-    supplier_analysis: Dict[str, Any]  # Analysis of supplier performance
-    inventory_turnover_insights: List[str]
+    reorder_suggestions: List[ReorderSuggestion] = Field(default_factory=list)
+    critical_items: List[int] = Field(default_factory=list)  # Ingredient IDs that are most critical
+    optimization_tips: List[str] = Field(default_factory=list)
+    seasonal_recommendations: List[str] = Field(default_factory=list)
+    cost_optimization_suggestions: List[str] = Field(default_factory=list)
+    supplier_analysis: Dict[str, Any] = Field(default_factory=dict)  # Analysis of supplier performance
+    inventory_turnover_insights: List[str] = Field(default_factory=list)
 
 
 class InventoryReport(BaseModel):

@@ -194,7 +194,8 @@ async def update_menu_report(ctx: Context):
     global latest_report
     try:
         print("Updating multi-restaurant menu analytics report...")
-        latest_report = menu_agent.generate_multi_restaurant_report()
+        data_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'multi_restaurant_report.json')
+        latest_report = menu_agent.generate_multi_restaurant_report(data_path)
         print("Multi-restaurant menu analytics report updated")
     except Exception as e:
         ctx.logger.error(f"Error updating menu report: {e}")
